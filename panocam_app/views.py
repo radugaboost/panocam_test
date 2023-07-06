@@ -2,6 +2,22 @@ from django.shortcuts import render
 import cv2
 from django.http import StreamingHttpResponse
 from django.views.decorators import gzip
+# from pixellib.instance import instance_segmentation
+
+def get_available_cameras():
+    available_cameras = []
+
+    for index in range(10):
+        try:
+            capture = cv2.VideoCapture(index)
+            if capture.isOpened():
+                available_cameras.append(index)
+            capture.release()
+        except:
+            continue
+
+    return available_cameras
+
 
 @gzip.gzip_page
 def camera(request):
@@ -9,6 +25,9 @@ def camera(request):
     def generate():
         clf = cv2.CascadeClassifier(cascade_path)
         camera = cv2.VideoCapture(0)
+        
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         
         while True:
             _, frame = camera.read()
@@ -32,7 +51,7 @@ def camera(request):
 
     return StreamingHttpResponse(generate(), content_type='multipart/x-mixed-replace; boundary=frame')
 
-
 @gzip.gzip_page
 def camera_stream(request):
+    cameras_lst = get_available_cameras()
     return render(request, 'camera.html')
