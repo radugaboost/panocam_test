@@ -77,7 +77,7 @@
         </div>
     
         <div class="video-container">
-            <img id="cameraImage" src="">
+            <img id="cameraImage" src="" onerror="showFallbackImage()">
         </div>
     </div>
 
@@ -101,6 +101,10 @@
             clearCameraImage();
             currentIdCamera = newIdCamera;
             updateCameraImage();
+        }
+
+        function showFallbackImage() {
+            cameraImage.src = "./test.png";
         }
 
         window.onload = updateCameraImage;
