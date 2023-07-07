@@ -9,48 +9,57 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         h1 {
             text-align: center;
         }
     
         .container {
             display: flex;
-            justify-content: center;
-            align-items: center;
             height: 80vh;
             background-color: #ffffff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
-            border: 5px solid #ccc; /* Добавляем рамку вокруг изображения */
+            border: 5px solid #ccc;
         }
     
-        .panel {
-            display: flex;
-            align-items: center;
+        .menu {
+            width: 33%;
+            padding: 20px;
+            background-color: #f9f9f9;
+            box-sizing: border-box;
+        }
+    
+        .menu label {
             margin-bottom: 10px;
         }
     
-        .panel label {
-            margin-right: 5px;
-        }
-    
-        .panel input[type="text"] {
+        .menu input[type="text"] {
             width: 80px;
             margin-right: 10px;
         }
     
-        .panel button {
+        .menu button {
+            display: block;
             padding: 5px 10px;
+            margin-bottom: 10px;
             background-color: #4caf50;
             color: #ffffff;
             border: none;
             cursor: pointer;
-            margin-right: 10px;
         }
     
-        .panel button:hover {
+        .menu button:hover {
             background-color: #45a049;
         }
+    
+        .video-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            width: 66%;
+        }
+    
         #cameraImage {
             width: 100%;
             height: 100%;
@@ -60,35 +69,40 @@
 </head>
 <body>
     <h1>Panocam</h1>
-    <div class="panel">
-        <label for="fpsInput">Частота кадров:</label>
-        <input type="text" id="fpsInput" />
-        <label for="resolutionInput">Разрешение:</label>
-        <input type="text" id="resolutionInput" />
-        <button onclick="changeFpsResolution()">Изменить</button>
-        <button onclick="switchCamera()">Переключить камеру</button>
-    </div>
     <div class="container">
-        <img id="cameraImage" src="">
+        <div class="menu">
+            <label for="idCameraInput">Id камеры:</label>
+            <input type="text" id="idCameraInput" />
+            <button onclick="changeSettings()">Изменить</button>
+        </div>
+    
+        <div class="video-container">
+            <img id="cameraImage" src="">
+        </div>
     </div>
 
     <script>
-        // JavaScript код для обновления изображения и изменения размера
-        var cameraImage = document.getElementById("cameraImage");
-        var zoomInput = document.getElementById("zoomInput");
         var currentZoom = 1.0;
+        var currentIdCamera = 1;
 
         function updateCameraImage() {
-            cameraImage.src = "{% url 'camera_stream' %}";
+            var url = `/camera_stream/${currentIdCamera}/`;
+            cameraImage.src = url;
         }
 
-        function zoomImage(zoomFactor) {
-            currentZoom += zoomFactor;
-            cameraImage.style.transform = `scale(${currentZoom})`;
-            zoomInput.value = `${(currentZoom * 100).toFixed(0)}%`;
+        function clearCameraImage() {
+            var cameraImage = document.getElementById('cameraImage');
+            cameraImage.src = '';
         }
 
-        // Обновление изображения при загрузке страницы
+        function changeSettings() {
+            var newIdCamera = document.getElementById("idCameraInput").value;
+
+            clearCameraImage();
+            currentIdCamera = newIdCamera;
+            updateCameraImage();
+        }
+
         window.onload = updateCameraImage;
     </script>
 </body>
