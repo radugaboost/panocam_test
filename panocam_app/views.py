@@ -98,11 +98,12 @@ class ThreadedCamera(object):
         return jpeg
 
 def generate(camera_id: int):
-    while True:
+    if camera_id in THREADED_CAMERAS.keys():
         capture = THREADED_CAMERAS[camera_id]
-        jpeg = capture.show_frame()
-        yield (b'--frame\r\n'
-                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
+        while True:
+            jpeg = capture.show_frame()
+            yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
 @gzip.gzip_page
 def camera(request, camera_id: int):
