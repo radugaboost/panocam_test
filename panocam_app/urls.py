@@ -1,11 +1,11 @@
 from django.urls import include, path
 from rest_framework import routers
-from . import views
+from . import views, api
 
 router = routers.DefaultRouter()
-router.register('ConfigurationViewSet', views.ConfigurationViewSet)
-router.register('CameraViewSet', views.CameraViewSet)
-router.register('LabelViewSet', views.LabelViewSet)
+router.register('ConfigurationViewSet', api.ConfigurationViewSet)
+router.register('CameraViewSet', api.CameraViewSet)
+router.register('LabelViewSet', api.LabelViewSet)
 
 urlpatterns = [
     path('camera_stream/<int:camera_id>/', views.camera, name='camera_stream'),
