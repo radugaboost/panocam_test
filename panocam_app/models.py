@@ -22,7 +22,7 @@ class Camera(models.Model):
     mask = models.CharField(null=False, max_length=24)
     name = models.CharField(null=False, max_length=30)
     user = models.ForeignKey(User, models.CASCADE, blank=True, null=False)
-    image_config = models.ForeignKey(Configuration, models.CASCADE, blank=True, null=False)
+    image_config = models.ForeignKey(Configuration, models.DO_NOTHING, blank=True, null=False)
 
     class Meta:
         db_table = 'camera'
@@ -33,4 +33,7 @@ class Label(models.Model):
     content = models.CharField(null=False, max_length=100)
     x_axing = models.DecimalField(max_digits=7, decimal_places=2, null=False, blank=True)
     y_axing = models.DecimalField(max_digits=7, decimal_places=2, null=False, blank=True)
+    
+    class Meta:
+        db_table = 'label'
 
