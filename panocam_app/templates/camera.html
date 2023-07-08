@@ -82,16 +82,11 @@
 </head>
 <body>
     <header>
-        <!-- Изображение в виде кнопки -->
         <img src="https://cdn-icons-png.flaticon.com/512/1828/1828853.png" onclick="toggleLeftCanvas()" width="50" height="50" id="menuImage">
     </header>
 
     <div id="leftCanvas">
-        <ol>
-        {% for camera in cameras %}
-            <li><a onclick="changeSettings({{ camera.id }})">{{ camera.ip }}</a></li>
-        {% endfor %}
-        </ol>
+        <ul id="list"></ul>
     </div>
     <h1>Panocam</h1>
     <div class="container">
@@ -151,6 +146,29 @@
                 }
             }
         }
+
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/get_cameras", true);
+    xhr.send();
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+        var response = JSON.parse(xhr.responseText);
+        var list = document.getElementById("list");
+
+        response.forEach(function(item) {
+          var listItem = document.createElement("li");
+          var link = document.createElement("a");
+
+          link.textContent = item.ip;
+          link.setAttribute("onclick", "changeSettings(" + item.id + ")");
+
+          listItem.appendChild(link);
+          list.appendChild(listItem);
+        });
+      }
+    };
     </script>
 </body>
 </html>

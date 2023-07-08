@@ -1,5 +1,6 @@
 from rest_framework import viewsets, permissions
-from .serializers import ConfigurationSerializer, CameraSerializer, LabelSerializer
+from django.contrib.auth.models import User
+from .serializers import ConfigurationSerializer, CameraSerializer, LabelSerializer, UserSerializer
 from .models import Configuration, Camera, Label
 
 
@@ -45,3 +46,4 @@ def create_viewset(cls_model, serializer, permission, order_field='id'):
 ConfigurationViewSet = create_viewset(Configuration, ConfigurationSerializer, Permission)
 CameraViewSet = create_viewset(Camera, CameraSerializer, Permission)
 LabelViewSet = create_viewset(Label, LabelSerializer, Permission)
+UserViewSet = create_viewset(User, UserSerializer, Permission)

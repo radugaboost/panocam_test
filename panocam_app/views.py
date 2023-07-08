@@ -117,7 +117,7 @@ def camera(request, camera_id: int):
 
 @gzip.gzip_page
 def camera_stream(request):
-    return render(request, 'camera.html', {'cameras': get_available_cameras()})
+    return render(request, 'camera.html')
 
 
 def start():
@@ -127,4 +127,4 @@ def start():
         THREADED_CAMERAS[item.id] = thread
 
 
-start()
+# start()

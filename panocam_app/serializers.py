@@ -4,6 +4,12 @@ from rest_framework.serializers import HyperlinkedModelSerializer
 from .models import Configuration, Camera, Label
 
 
+class UserSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+
 class ConfigurationSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Configuration
