@@ -65,6 +65,7 @@
             height: 100%;
             object-fit: contain;
         }
+
         #leftCanvas {
             position: fixed;
             left: -300px; /* Задаем начальное положение канваса за пределами экрана */
@@ -81,10 +82,8 @@
 </head>
 <body>
     <header>
-        <div>
-            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828853.png" onclick="toggleLeftCanvas()" width="50" height="50">
-            <h1>Panocam</h1>
-        </div>
+        <!-- Изображение в виде кнопки -->
+        <img src="https://cdn-icons-png.flaticon.com/512/1828/1828853.png" onclick="toggleLeftCanvas()" width="50" height="50" id="menuImage">
     </header>
 
     <div id="leftCanvas">
@@ -94,6 +93,7 @@
         {% endfor %}
         </ol>
     </div>
+    <h1>Panocam</h1>
     <div class="container">
         <div class="menu">
             <button onclick="changeSettings()">Изменить</button>
@@ -136,6 +136,20 @@
         function toggleLeftCanvas() {
             var canvas = document.getElementById("leftCanvas");
             canvas.classList.toggle("open");
+        }
+
+        // Функция для скрытия меню при нажатии вне его области
+        window.onclick = function(event) {
+            var canvas = document.getElementById("leftCanvas");
+            var menuImage = document.getElementById("menuImage");
+            var isClickInsideMenu = event.target.closest("#leftCanvas") !== null;
+            var isClickOnMenuImage = event.target === menuImage;
+
+            if (!isClickInsideMenu && !isClickOnMenuImage) {
+                if (canvas.classList.contains("open")) {
+                    canvas.classList.remove("open");
+                }
+            }
         }
     </script>
 </body>
