@@ -4,9 +4,10 @@ from . import api_methods
 from . import views, api_models
 
 router = routers.DefaultRouter()
-router.register('ConfigurationViewSet', api_models.ConfigurationViewSet)
-router.register('CameraViewSet', api_models.CameraViewSet)
-router.register('LabelViewSet', api_models.LabelViewSet)
+router.register('UserViewSet', api_models.UserViewSet, basename='user')
+router.register('ConfigurationViewSet', api_models.ConfigurationViewSet, basename='configuration')
+router.register('CameraViewSet', api_models.CameraViewSet, basename='camera')
+router.register('LabelViewSet', api_models.LabelViewSet, basename='label')
 
 urlpatterns = [
     path('camera_stream/<int:camera_id>/', views.camera, name='camera_stream'),

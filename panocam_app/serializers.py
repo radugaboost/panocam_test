@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from rest_framework.serializers import HyperlinkedModelSerializer
+from rest_framework.serializers import HyperlinkedModelSerializer, HyperlinkedRelatedField
 
 from .models import Configuration, Camera, Label
 
