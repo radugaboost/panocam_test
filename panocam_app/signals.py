@@ -4,7 +4,7 @@ from .models import Camera, Configuration
 from .scripts import start_all_cameras, THREADED_CAMERAS
 from .views import get_available_cameras
 
-def check_camera_restart(camera_id: int):
+def camera_restart(camera_id: int):
     if camera_id in THREADED_CAMERAS.keys():
         thread = THREADED_CAMERAS[camera_id]
         thread.restart()
@@ -15,11 +15,10 @@ def process_start(sender, **kwargs):
 
 @receiver(post_save, sender=Camera)
 def camera_configuration_updated(sender, instance, **kwargs):
-    check_camera_restart(instance.id)
+    camera_restart(instance.id)
 
 @receiver(post_save, sender=Configuration)
 def camera_configuration_assigned(sender, instance, **kwargs):
-    cameras = get_available_cameras()
+    cameras = Camera.objects.filter(image_config=instance)
     for camera in cameras:
-        if camera.image_config == instance:
-            check_camera_restart(camera.id)
+        camera_restart(camera.id)
