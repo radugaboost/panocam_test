@@ -65,25 +65,49 @@
             height: 100%;
             object-fit: contain;
         }
+        #leftCanvas {
+            position: fixed;
+            left: -300px; /* Задаем начальное положение канваса за пределами экрана */
+            top: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #f1f1f1;
+            transition: left 0.3s ease; /* Анимация выезда/закрытия */
+        }
+        #leftCanvas.open {
+            left: 0; /* Положение канваса при открытии */
+        }
     </style>
 </head>
 <body>
-    <h1>Panocam</h1>
+    <header>
+        <div>
+            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828853.png" onclick="toggleLeftCanvas()" width="50" height="50">
+            <h1>Panocam</h1>
+        </div>
+    </header>
+
+    <div id="leftCanvas">
+        <ol>
+        {% for camera in cameras %}
+            <li><a onclick="changeSettings({{ camera.id }})">{{ camera.ip }}</a></li>
+        {% endfor %}
+        </ol>
+    </div>
     <div class="container">
         <div class="menu">
-            <label for="idCameraInput">Id камеры:</label>
-            <input type="text" id="idCameraInput" />
             <button onclick="changeSettings()">Изменить</button>
         </div>
     
         <div class="video-container">
-            <img id="cameraImage" src="" onerror="showFallbackImage()">
+            <img id="cameraImage" src="">
         </div>
     </div>
 
     <script>
         var currentZoom = 1.0;
-        var currentIdCamera = 1;
+        var currentIdCamera = 0;
+
 
         function updateCameraImage() {
             var url = `/camera_stream/${currentIdCamera}/`;
@@ -95,8 +119,8 @@
             cameraImage.src = '';
         }
 
-        function changeSettings() {
-            var newIdCamera = document.getElementById("idCameraInput").value;
+        function changeSettings(ip) {
+            var newIdCamera = ip;
 
             clearCameraImage();
             currentIdCamera = newIdCamera;
@@ -108,6 +132,11 @@
         }
 
         window.onload = updateCameraImage;
+
+        function toggleLeftCanvas() {
+            var canvas = document.getElementById("leftCanvas");
+            canvas.classList.toggle("open");
+        }
     </script>
 </body>
 </html>

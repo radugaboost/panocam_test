@@ -21,7 +21,8 @@ def get_available_cameras():
         except:
             continue
 
-    return available_cameras
+    # return available_cameras
+    return models.Camera.objects.all()
 
 def create_capture(camera_id: int, timeout=2):
     camera = models.Camera.objects.get(id=camera_id)
@@ -98,4 +99,4 @@ def camera(request, camera_id: int):
 
 @gzip.gzip_page
 def camera_stream(request):
-    return render(request, 'camera.html')
+    return render(request, 'camera.html', {'cameras': get_available_cameras()})
