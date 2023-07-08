@@ -2,7 +2,6 @@ from django.db.models.signals import post_save, class_prepared
 from django.dispatch import receiver
 from .models import Camera, Configuration
 from .scripts import start_all_cameras, THREADED_CAMERAS
-from .views import get_available_cameras
 
 def camera_restart(camera_id: int):
     if camera_id in THREADED_CAMERAS.keys():
