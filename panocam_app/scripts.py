@@ -17,7 +17,7 @@ def create_capture(camera_id: int, timeout=2):
     while not capture.isOpened():
         elapsed_time = time() - start_time
         if elapsed_time > timeout:
-            raise Exception(f"Не удалось открыть камеру с ip {camera.ip}")
+            print(f"Не удалось открыть камеру с ip {camera.ip}")
         
         sleep(0.5)  # Пауза перед повторной попыткой
         capture = cv2.VideoCapture(int(camera.ip))
