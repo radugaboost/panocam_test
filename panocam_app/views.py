@@ -3,6 +3,24 @@ from django.http import StreamingHttpResponse
 from django.views.decorators import gzip
 from .models import Camera
 from .scripts import THREADED_CAMERAS
+import os
+
+def video_list(request):
+    video_dir = './panocam_app/static/videos'
+    video_files = os.listdir(video_dir)
+    video_list = []
+
+    for filename in video_files:
+        if filename.endswith('.mp4'):
+            video_path = os.path.join('/static/videos/', filename)
+            video_list.append(video_path)
+
+    context = {
+        'video_list': video_list
+    }
+
+    return render(request, 'video.html', context)
+
 
 def get_available_cameras():
     return Camera.objects.all()

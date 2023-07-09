@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video List</title>
+    {% load static %}
+</head>
+
+<body>
+    <ul id="videoList">
+        {% for video_path in video_list %}
+          <li onclick="playVideo('{{ video_path }}')">{{ video_path }}</li>
+        {% endfor %}
+      </ul>
+      
+      <video id="videoPlayer" controls>
+        <!-- Здесь будет отображаться выбранное видео -->
+      </video>
+      
+      <script>
+        // Функция для воспроизведения выбранного видео
+        function playVideo(videoUrl) {
+          const videoPlayer = document.getElementById('videoPlayer');
+          videoPlayer.src = videoUrl;
+          videoPlayer.play();
+        }
+      </script>      
+</body>
+
+</html>

@@ -40,10 +40,30 @@ class ThreadedCamera(object):
     def __init__(self, src=0):
         self.frame = None
         self.src = src
+        self.detect = False
+        self.capture = create_capture(self.src)
         self.start_video()
     
+    def start_recording(self):
+        self.out = cv2.VideoWriter(
+            f'./panocam_app/static/videos/{datetime.now()}.mp4',
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            20.0,
+            (640, 480)
+        )
+        self.recording_thread = Thread(target=self.recording)
+        self.recording_thread.start()
+    
+    def recording(self):
+        frame = self.frame
+        while self.detect:
+            if frame is self.frame:
+                continue
+            frame = self.frame
+            self.out.write(frame)
+        self.out.release()
+
     def start_video(self):
-        self.capture = create_capture(self.src)
         self.thread = Thread(target=self.update)
         self.thread.daemon = True
         self.stop = False
@@ -69,6 +89,12 @@ class ThreadedCamera(object):
                     flags=cv2.CASCADE_SCALE_IMAGE
                 )
                 
+                if len(faces) > 0 and not self.detect:
+                    self.detect = True
+                    self.start_recording()
+                if len(faces) == 0 and self.detect:
+                    self.detect = False
+                
                 for (x, y, width, height) in faces:
                     cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 2)
 
@@ -79,13 +105,14 @@ class ThreadedCamera(object):
                 cv2.putText(frame, current_date, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 self.frame = frame
 
+        self.capture.release()
+
     def show_frame(self):
         _, jpeg = cv2.imencode('.jpg', self.frame)
         return jpeg
     
     def restart(self):
         self.stop = True
-        self.capture.release()
         self.start_video()
 
 def start_all_cameras():
