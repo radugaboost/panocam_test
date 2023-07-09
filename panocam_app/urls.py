@@ -13,4 +13,5 @@ urlpatterns = [
     path('camera/', views.camera_stream, name='camera'),
     path('rest/', include(router.urls)),
     path('video_list/', views.video_list, name='video_list'),
+    path('check_camera/<int:camera_id>/', views.check_camera, name='check_camera'),
 ]

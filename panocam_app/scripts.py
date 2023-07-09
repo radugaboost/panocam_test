@@ -3,6 +3,7 @@ import cv2
 from time import time, sleep
 from datetime import datetime
 from threading import Thread
+from queue import Queue
 
 THREADED_CAMERAS = dict()
 
@@ -18,7 +19,8 @@ def create_capture(camera_id: int, timeout=2):
         elapsed_time = time() - start_time
         if elapsed_time > timeout:
             print(f"Не удалось открыть камеру с ip {camera.ip}")
-        
+            return False
+
         sleep(0.5)  # Пауза перед повторной попыткой
         capture = cv2.VideoCapture(int(camera.ip))
 
@@ -26,8 +28,8 @@ def create_capture(camera_id: int, timeout=2):
     settings = camera.image_config
     resolution = settings.resolution.split('x')
         
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, int(resolution[0]))  # ширина
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, int(resolution[1]))  # высота
+    capture.set(3, int(resolution[0]))  # ширина
+    capture.set(4, int(resolution[1]))  # высота
     capture.set(cv2.CAP_PROP_BRIGHTNESS, settings.brightness)  # яркость
     capture.set(cv2.CAP_PROP_HUE, settings.hue) # оттенок
     capture.set(cv2.CAP_PROP_CONTRAST, settings.contrast) # контрастность
@@ -41,29 +43,30 @@ class ThreadedCamera(object):
         self.frame = None
         self.src = src
         self.detect = False
-        self.capture = create_capture(self.src)
+        self.queue = None
         self.start_video()
     
     def start_recording(self):
         self.out = cv2.VideoWriter(
             f'./panocam_app/static/videos/{datetime.now()}.mp4',
-            cv2.VideoWriter_fourcc(*'mp4v'),
+            cv2.VideoWriter_fourcc(*"avc1"),
             20.0,
             (640, 480)
         )
         self.recording_thread = Thread(target=self.recording)
+        self.queue = Queue()
         self.recording_thread.start()
     
     def recording(self):
-        frame = self.frame
         while self.detect:
-            if frame is self.frame:
-                continue
-            frame = self.frame
-            self.out.write(frame)
-        self.out.release()
+            if not self.queue.empty():
+                frame = self.queue.get()
+                self.out.write(frame)
 
     def start_video(self):
+        self.capture = create_capture(self.src)
+        if not self.capture:
+            return False
         self.thread = Thread(target=self.update)
         self.thread.daemon = True
         self.stop = False
@@ -94,6 +97,8 @@ class ThreadedCamera(object):
                     self.start_recording()
                 if len(faces) == 0 and self.detect:
                     self.detect = False
+                    self.queue = None
+                    self.out.release()
                 
                 for (x, y, width, height) in faces:
                     cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 2)
@@ -104,8 +109,8 @@ class ThreadedCamera(object):
                 # Наложение текста с датой на кадр
                 cv2.putText(frame, current_date, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 self.frame = frame
-
-        self.capture.release()
+                if self.queue:
+                    self.queue.put(self.frame)
 
     def show_frame(self):
         _, jpeg = cv2.imencode('.jpg', self.frame)
@@ -113,6 +118,7 @@ class ThreadedCamera(object):
     
     def restart(self):
         self.stop = True
+        self.capture.release()
         self.start_video()
 
 def start_all_cameras():
@@ -120,4 +126,6 @@ def start_all_cameras():
     for item in cameras:
         if item.id not in THREADED_CAMERAS.keys():
             thread = ThreadedCamera(item.id)
-            THREADED_CAMERAS[item.id] = thread
+            if thread.capture:
+                THREADED_CAMERAS[item.id] = thread
+    print(THREADED_CAMERAS)

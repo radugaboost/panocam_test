@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Panocam</title>
+    {% load static %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -118,16 +120,33 @@
             cameraImage.src = '';
         }
 
-        function changeSettings(ip) {
-            var newIdCamera = ip;
-
-            clearCameraImage();
-            currentIdCamera = newIdCamera;
-            updateCameraImage();
+        function showFallbackImage() {
+            cameraImage.src = "/static/images/placeholder.png";
         }
 
-        function showFallbackImage() {
-            cameraImage.src = "./test.png";
+        function changeSettings(ip) {
+            // Получение новых значений переменных из пользовательского ввода
+            var newIdCamera = ip;
+        
+            // Отправка AJAX-запроса для прерывания предыдущего соединения
+            $.ajax({
+                url: `/check_camera/${newIdCamera}/`,
+                type: 'GET', // Send a HEAD request to check the response status
+                success: function() {
+                    clearCameraImage();
+                    currentIdCamera = newIdCamera;
+                    updateCameraImage();
+                },
+                error: function(xhr) {
+                    if (xhr.status === 404) {
+                        clearCameraImage();
+                        showFallbackImage();
+                    } else {
+                        // Handle other error cases
+                        $('#status').text('Error: ' + xhr.status);
+                    }
+                }
+            });
         }
 
         window.onload = updateCameraImage;
