@@ -58,14 +58,18 @@ class ThreadedCamera(object):
         self.recording_thread.start()
     
     def recording(self):
+        print('Starting detect recording')
         while self.detect:
             if not self.queue.empty():
                 frame = self.queue.get()
                 self.out.write(frame)
+        print('Recording finished')
 
     def start_video(self):
         self.capture = create_capture(self.src)
         if not self.capture:
+            if self.src in THREADED_CAMERAS.keys():
+                del THREADED_CAMERAS[self.src]
             return False
         self.thread = Thread(target=self.update)
         self.thread.daemon = True
@@ -92,13 +96,13 @@ class ThreadedCamera(object):
                     flags=cv2.CASCADE_SCALE_IMAGE
                 )
                 
-                if len(faces) > 0 and not self.detect:
-                    self.detect = True
-                    self.start_recording()
-                if len(faces) == 0 and self.detect:
-                    self.detect = False
-                    self.queue = None
-                    self.out.release()
+                # if len(faces) > 0 and not self.detect:
+                #     self.detect = True
+                #     self.start_recording()
+                # if len(faces) == 0 and self.detect:
+                #     self.detect = False
+                #     self.queue = None
+                #     self.out.release()
                 
                 for (x, y, width, height) in faces:
                     cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 2)
@@ -121,11 +125,15 @@ class ThreadedCamera(object):
         self.capture.release()
         self.start_video()
 
+def start_camera(camera_id: int):
+    thread = ThreadedCamera(camera_id)
+    if thread.capture:
+        THREADED_CAMERAS[camera_id] = thread
+
 def start_all_cameras():
     cameras = Camera.objects.all()
     for item in cameras:
         if item.id not in THREADED_CAMERAS.keys():
-            thread = ThreadedCamera(item.id)
-            if thread.capture:
-                THREADED_CAMERAS[item.id] = thread
+            start_camera(item.id)
+
     print(THREADED_CAMERAS)
