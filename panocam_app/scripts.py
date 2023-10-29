@@ -4,6 +4,7 @@ from time import time, sleep
 from datetime import datetime
 from threading import Thread
 from queue import Queue
+from detection import Rknn_yolov5s
 import numpy as np
 
 THREADED_CAMERAS = dict()
@@ -47,7 +48,7 @@ class ThreadedCamera(object):
         self.queue = None
         self.detected_objects = tuple()
         self.start_video()
-    
+
     def start_recording(self):
         self.out = cv2.VideoWriter(
             f'./panocam_app/static/videos/{datetime.now()}.mp4',
@@ -58,7 +59,7 @@ class ThreadedCamera(object):
         self.recording_thread = Thread(target=self.recording)
         self.queue = Queue()
         self.recording_thread.start()
-    
+
     def recording(self):
         print('Starting detect recording')
         prev_frame = None
@@ -80,59 +81,18 @@ class ThreadedCamera(object):
         self.thread.start()
 
     def update(self):
-        cascade_path = './panocam_app/filters/haarcascade_frontalface_default.xml'
-        clf = cv2.CascadeClassifier(cascade_path)
+        model = Rknn_yolov5s(
+            rknn_model="./models/yolov5s_relu_tk2_RK3588_i8.rknn"
+        )
         while not self.stop:
             success, frame = self.capture.read()
             flipped_frame = cv2.flip(frame, 1)  # зеркалит кадр
-            preprocessed_frame = cv2.resize(flipped_frame, (1280, 720))
 
             if success:
-                gray = cv2.cvtColor(preprocessed_frame, cv2.COLOR_BGR2GRAY)
-                faces = clf.detectMultiScale(
-                    gray,
-                    scaleFactor=1.1,
-                    minNeighbors=10,
-                    minSize=(50,50),
-                    flags=cv2.CASCADE_SCALE_IMAGE
-                )
-                self.frame = ThreadedCamera.frame_process(preprocessed_frame, faces, (160, 160))
+                self.frame = model.detect(flipped_frame)
 
                 if self.queue:
                     self.queue.put(self.frame)
-
-    @staticmethod
-    def frame_process(frame: np, detected_objects: list, object_image_size: tuple):
-        frame_height = frame.shape[0]
-        frame_width = frame.shape[1]
-        combined_height = frame_height + object_image_size[0]
-        combined_frame = np.zeros((combined_height, frame_width, 3), dtype=np.uint8)
-
-        if len(detected_objects) > 0:
-            resized_objects = []
-
-            clone_frame = frame.copy()
-            for (x, y, width, height) in detected_objects:
-                object_image = clone_frame[y:y + height, x:x + width]
-                resized_object = cv2.resize(object_image, (object_image_size))
-                resized_objects.append(resized_object)
-                cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 2)
-
-            current_x = 0 # начальное положение для вставки изображения
-            for object_image in resized_objects:
-                object_width = object_image.shape[1]
-                if current_x + object_width > frame_width:
-                    frame_height += object_image.shape[1]
-                    combined_height += object_image.shape[1]
-                    current_x = 0
-                combined_frame[frame_height:combined_height, current_x:current_x + object_width] = object_image
-                current_x += object_width # сдвигаем текущее положение
-
-        combined_frame[:frame_height, :frame_width] = frame
-        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # подставляем текущее время
-        cv2.putText(combined_frame, current_date, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-        return combined_frame
 
     def show_frame(self):
         _, jpeg = cv2.imencode('.jpg', self.frame)
