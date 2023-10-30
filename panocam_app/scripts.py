@@ -42,11 +42,9 @@ def create_capture(camera_id: int, timeout=1):
 
 class ThreadedCamera(object):
     def __init__(self, src=0):
-        self.frame = None
+        self.__frame = None
         self.src = src
-        self.detect = False
         self.queue = None
-        self.detected_objects = tuple()
         self.start_video()
 
     def start_recording(self):
@@ -89,13 +87,13 @@ class ThreadedCamera(object):
             flipped_frame = cv2.flip(frame, 1)  # зеркалит кадр
 
             if success:
-                self.frame = model.detect(flipped_frame)
+                self.__frame = model.detect(flipped_frame)
 
                 if self.queue:
-                    self.queue.put(self.frame)
+                    self.queue.put(self.__frame)
 
     def show_frame(self):
-        _, jpeg = cv2.imencode('.jpg', self.frame)
+        _, jpeg = cv2.imencode('.jpg', self.__frame)
         return jpeg
     
     def restart(self):
