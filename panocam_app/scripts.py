@@ -1,16 +1,18 @@
-from .models import Camera
+from .models import Camera, MLModel
 import cv2
 from time import time, sleep
 from datetime import datetime
 from threading import Thread
 from queue import Queue
-from detection import Rknn_yolov5s
+from panocam_app.detection import Rknn_yolov5s
 import numpy as np
 
 THREADED_CAMERAS = dict()
 
+
 def get_available_cameras():
     return Camera.objects.all()
+
 
 def create_capture(camera_id: int, timeout=1):
     camera = Camera.objects.get(id=camera_id)
@@ -26,10 +28,9 @@ def create_capture(camera_id: int, timeout=1):
         sleep(0.5)  # Пауза перед повторной попыткой
         capture = cv2.VideoCapture(int(camera.ip))
 
-
     settings = camera.image_config
     resolution = settings.resolution.split('x')
-        
+
     # capture.set(3, int(resolution[0]))  # ширина
     # capture.set(4, int(resolution[1]))  # высота
     # capture.set(cv2.CAP_PROP_BRIGHTNESS, settings.brightness)  # яркость
@@ -37,8 +38,27 @@ def create_capture(camera_id: int, timeout=1):
     # capture.set(cv2.CAP_PROP_CONTRAST, settings.contrast) # контрастность
     # capture.set(cv2.CAP_PROP_SATURATION, settings.saturation) # насыщенность
     # capture.set(cv2.CAP_PROP_FPS, settings.frame_rate) # частота кадров
-    
+
     return capture
+
+
+class ModelManager:
+    models = []
+
+    @classmethod
+    def update_models(cls):
+        cls.models = [Rknn_yolov5s(model.file_path) for model in MLModel.objects.filter(active=True)]
+
+    @classmethod
+    def process_models(cls, flipped_frame):
+        if not cls.models:
+            cls.update_models()
+
+        result_frame = flipped_frame
+        for model in cls.models:
+            result_frame = model.detect(result_frame)
+        return result_frame
+
 
 class ThreadedCamera(object):
     def __init__(self, src=0):
@@ -79,15 +99,16 @@ class ThreadedCamera(object):
         self.thread.start()
 
     def update(self):
-        model = Rknn_yolov5s(
-            rknn_model="./models/yolov5s_relu_tk2_RK3588_i8.rknn"
-        )
+        # model = Rknn_yolov5s(
+        #     rknn_model="./models/yolov5s_relu_tk2_RK3588_i8.rknn"
+        # )
         while not self.stop:
             success, frame = self.capture.read()
             flipped_frame = cv2.flip(frame, 1)  # зеркалит кадр
 
             if success:
-                self.__frame = model.detect(flipped_frame)
+                # self.__frame = model.detect(flipped_frame)
+                self.__frame = ModelManager.process_models(flipped_frame)
 
                 if self.queue:
                     self.queue.put(self.__frame)
@@ -95,16 +116,18 @@ class ThreadedCamera(object):
     def show_frame(self):
         _, jpeg = cv2.imencode('.jpg', self.__frame)
         return jpeg
-    
+
     def restart(self):
         self.stop = True
         self.capture.release()
         self.start_video()
 
+
 def start_camera(camera_id: int):
     thread = ThreadedCamera(camera_id)
     if thread.capture:
         THREADED_CAMERAS[camera_id] = thread
+
 
 def start_all_cameras():
     cameras = Camera.objects.all()

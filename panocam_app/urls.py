@@ -14,4 +14,6 @@ urlpatterns = [
     path('rest/', include(router.urls)),
     path('video_list/', views.video_list, name='video_list'),
     path('check_camera/<int:camera_id>/', views.check_camera, name='check_camera'),
+    path('load_model/', views.upload_page, name='upload_file'),
+    path('save_model/', views.upload_file, name='save_model'),
 ]
