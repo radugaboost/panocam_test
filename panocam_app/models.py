@@ -47,7 +47,7 @@ class Label(models.Model):
         return f'{self.camera}'
 
 
-class MLModel(models.Model):
+class DetectionModel(models.Model):
     name = models.CharField(null=False, max_length=255)
     description = models.CharField(null=False, max_length=255)
     file_path = models.CharField(null=False, max_length=255)

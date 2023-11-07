@@ -3,7 +3,7 @@ from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpRespons
 from django.core.files.storage import FileSystemStorage
 from django.views.decorators import gzip
 from werkzeug.utils import secure_filename
-from panocam_app.models import MLModel
+from panocam_app.models import DetectionModel
 # from rknn.api import RKNN
 
 from panocam_app.models import Camera
@@ -77,7 +77,7 @@ def save_model_file(filename, saved_path, description, model_name=None):
     file_prefix = os.path.splitext(filename)[0]
     model_name = file_prefix if model_name is None else model_name
 
-    rknn = RKNN()
+    # rknn = RKNN()
     rknn.config(channel_mean_value='103.94 116.78 123.68 58.82', reorder_channel='0 1 2')
 
     if filename.endswith(".tflite"):
@@ -94,7 +94,7 @@ def save_model_file(filename, saved_path, description, model_name=None):
     saved_rknn_model = rknn.export_rknn(''.join([rknn_model, '.rknn']))
     if saved_rknn_model != 0:
         return HttpResponse('Failed to save model')
-    MLModel.objects.create(name=model_name, description=description, file_path=saved_model)
+    DetectionModel.objects.create(name=model_name, description=description, file_path=saved_model)
     os.remove(saved_model)
     return HttpResponse('File uploaded and processed successfully')
 

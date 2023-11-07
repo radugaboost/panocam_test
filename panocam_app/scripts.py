@@ -1,4 +1,4 @@
-from .models import Camera, MLModel
+from .models import Camera, DetectionModel
 import cv2
 from time import time, sleep
 from datetime import datetime
@@ -47,14 +47,14 @@ class ModelManager:
 
     @classmethod
     def update_models(cls):
-        cls.models = [Rknn_yolov5s(model.file_path) for model in MLModel.objects.filter(active=True)]
+        cls.models = [Rknn_yolov5s(model.file_path) for model in DetectionModel.objects.filter(active=True)]
 
     @classmethod
-    def process_models(cls, flipped_frame):
+    def process_models(cls, frame):
         if not cls.models:
             cls.update_models()
 
-        result_frame = flipped_frame
+        result_frame = frame
         for model in cls.models:
             result_frame = model.detect(result_frame)
         return result_frame
@@ -78,7 +78,7 @@ class ThreadedCamera(object):
         self.queue = Queue()
         self.recording_thread.start()
 
-    def recording(self):
+    def recording(self): # TODO
         print('Starting detect recording')
         prev_frame = None
         while self.detect:
@@ -99,15 +99,11 @@ class ThreadedCamera(object):
         self.thread.start()
 
     def update(self):
-        # model = Rknn_yolov5s(
-        #     rknn_model="./models/yolov5s_relu_tk2_RK3588_i8.rknn"
-        # )
         while not self.stop:
             success, frame = self.capture.read()
             flipped_frame = cv2.flip(frame, 1)  # зеркалит кадр
 
             if success:
-                # self.__frame = model.detect(flipped_frame)
                 self.__frame = ModelManager.process_models(flipped_frame)
 
                 if self.queue:

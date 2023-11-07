@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from rknnlite.api import RKNNLite
+# from rknnlite.api import RKNNLite
 
 class Rknn_yolov5s:
 

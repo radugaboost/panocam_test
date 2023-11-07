@@ -1,29 +1,79 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Video List</title>
-    {% load static %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Videos</title>
+
+  <link href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/css/sidebar.css" rel="stylesheet">
 </head>
-
 <body>
-    <ul id="videoList">
-        {% for video_path in video_list %}
-          <li onclick="playVideo('{{ video_path }}')">{{ video_path }}</li>
-        {% endfor %}
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="home" viewBox="0 0 16 16">
+      <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146zM2.5 14V7.707l5.5-5.5 5.5 5.5V14H10v-4a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v4H2.5z"/>
+    </symbol>
+    <symbol id="speedometer2" viewBox="0 0 16 16">
+      <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zM3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707zM2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10zm9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5zm.754-4.246a.389.389 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.389.389 0 0 0-.029-.518z"/>
+      <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A7.988 7.988 0 0 1 0 10zm8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3z"/>
+    </symbol>
+    <symbol id="table" viewBox="0 0 32 32">
+      <path d="M31.965,15.776c-0.01-0.042-0.004-0.087-0.02-0.128c-0.006-0.017-0.021-0.026-0.027-0.042   c-0.01-0.024-0.008-0.051-0.021-0.074c-2.9-5.551-9.213-9.528-15.873-9.528c-6.661,0-12.973,3.971-15.875,9.521   c-0.013,0.023-0.011,0.05-0.021,0.074c-0.007,0.016-0.021,0.025-0.027,0.042c-0.016,0.041-0.01,0.086-0.02,0.128   c-0.018,0.075-0.035,0.147-0.035,0.224s0.018,0.148,0.035,0.224c0.01,0.042,0.004,0.087,0.02,0.128   c0.006,0.017,0.021,0.026,0.027,0.042c0.01,0.024,0.008,0.051,0.021,0.074c2.901,5.551,9.214,9.528,15.875,9.528   c6.66,0,12.973-3.971,15.873-9.521c0.014-0.023,0.012-0.05,0.021-0.074c0.006-0.016,0.021-0.025,0.027-0.042   c0.016-0.041,0.01-0.086,0.02-0.128C31.982,16.148,32,16.076,32,16S31.982,15.851,31.965,15.776z M16.023,23.988   c-5.615,0-11.112-3.191-13.851-7.995c2.754-4.81,8.243-7.99,13.851-7.99c5.613,0,11.111,3.192,13.85,7.995   C27.119,20.809,21.631,23.988,16.023,23.988z"/>
+      <path d="M16.023,11.999c-0.002,0-0.004,0.001-0.006,0.001c-2.205,0.004-3.992,1.791-3.992,3.996   c0,0.276,0.224,0.5,0.5,0.5c0.275,0,0.499-0.224,0.499-0.5c0-1.652,1.345-2.997,2.999-2.997v-0.001   c0.275,0,0.498-0.224,0.498-0.499C16.521,12.222,16.299,11.999,16.023,11.999z"/>
+      <path d="M16,9c-3.867,0-7,3.134-7,7c0,3.866,3.134,7,7,7c3.865,0,7-3.135,7-7C23,12.133,19.865,9,16,9z M16,22   c-3.309,0-6-2.691-6-6c0-3.309,2.691-6,6-6c3.309,0,6,2.691,6,6C22,19.309,19.309,22,16,22z"/>
+    </symbol>
+    <symbol id="people-circle" viewBox="0 0 16 16">
+      <path d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V5zm11.5 5.175 3.5 1.556V4.269l-3.5 1.556v4.35zM2 4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h7.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H2z"/>
+    </symbol>
+    <symbol id="grid" viewBox="0 0 30 30">
+      <path d="M18,29H14a1,1,0,0,1-1-1V26.56a1.38,1.38,0,0,0-2.35-1l-1,1a1,1,0,0,1-1.42,0L5.39,23.78a1,1,0,0,1,0-1.42l1-1a1.38,1.38,0,0,0-1-2.35H4a1,1,0,0,1-1-1V14a1,1,0,0,1,1-1H5.44a1.38,1.38,0,0,0,1-2.35l-1-1a1,1,0,0,1,0-1.42L8.22,5.39a1,1,0,0,1,1.42,0l1,1a1.38,1.38,0,0,0,2.35-1V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V5.44a1.38,1.38,0,0,0,2.35,1l1-1a1,1,0,0,1,1.42,0l2.83,2.83a1,1,0,0,1,0,1.42l-1,1a1.38,1.38,0,0,0,1,2.35H28a1,1,0,0,1,1,1v4a1,1,0,0,1-1,1H26.56a1.38,1.38,0,0,0-1,2.35l1,1a1,1,0,0,1,0,1.42l-2.83,2.83a1,1,0,0,1-1.42,0l-1-1a1.38,1.38,0,0,0-2.35,1V28A1,1,0,0,1,18,29Zm-3-2h2v-.44a3.37,3.37,0,0,1,5.76-2.38l.31.31,1.42-1.42-.31-.31A3.37,3.37,0,0,1,26.56,17H27V15h-.44a3.37,3.37,0,0,1-2.38-5.76l.31-.31L23.07,7.51l-.31.31A3.37,3.37,0,0,1,17,5.44V5H15v.44A3.37,3.37,0,0,1,9.24,7.82l-.31-.31L7.51,8.93l.31.31A3.37,3.37,0,0,1,5.44,15H5v2h.44a3.37,3.37,0,0,1,2.38,5.76l-.31.31,1.42,1.42.31-.31A3.37,3.37,0,0,1,15,26.56Z"/>
+      <path d="M16,21a5,5,0,1,1,5-5A5,5,0,0,1,16,21Zm0-8a3,3,0,1,0,3,3A3,3,0,0,0,16,13Z"/>
+    </symbol>
+  </svg>
+  
+  <main>
+    <div class="d-flex flex-column flex-shrink-0 bg-light" style="width: 4.5rem; height: 100vh;">
+      <a href="/" class="d-block p-3 link-dark text-decoration-none" title="Icon-only" data-bs-toggle="tooltip" data-bs-placement="right">
+        <svg class="bi" width="40" height="32"><use xl; heeink:href="#bootstrap"/></svg>
+        <span class="visually-hidden">Icon-only</span>
+      </a>
+      <ul class="nav nav-pills nav-flush flex-column mb-auto text-center">
+        <li class="nav-item">
+          <a href="/camera" class="nav-link py-3 border-bottom" title="Home" data-bs-toggle="tooltip" data-bs-placement="right">
+            <svg class="bi" width="24" height="24" role="img" aria-label="Home"><use xlink:href="#home"/></svg>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link py-3 border-bottom" title="Settings" data-bs-toggle="tooltip" data-bs-placement="right">
+            <svg class="bi" width="24" height="24" role="img" aria-label="Settings"><use xlink:href="#grid"/></svg>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link py-3 border-bottom" title="Models" data-bs-toggle="tooltip" data-bs-placement="right">
+            <svg class="bi" width="24" height="24" role="img" aria-label="Models"><use xlink:href="#table"/></svg>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link active py-3 border-bottom" aria-current="page" title="Videos" data-bs-toggle="tooltip" data-bs-placement="right">
+            <svg class="bi" width="24" height="24" role="img" aria-label="Videos"><use xlink:href="#people-circle"/></svg>
+          </a>
+        </li>
       </ul>
-      
-      <video id="videoPlayer" controls>
-        <!-- Здесь будет отображаться выбранное видео -->
-      </video>
-      
-      <script>
-        // Функция для воспроизведения выбранного видео
-        function playVideo(videoUrl) {
-          const videoPlayer = document.getElementById('videoPlayer');
-          videoPlayer.src = videoUrl;
-          videoPlayer.play();
-        }
-      </script>      
+      <div class="dropdown border-top">
+        <a href="#" class="d-flex align-items-center justify-content-center p-3 link-dark text-decoration-none dropdown-toggle" id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
+          <img src="https://github.com/mdo.png" alt="mdo" width="24" height="24" class="rounded-circle">
+        </a>
+        <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser3">
+          <li><a class="dropdown-item" href="#">New project...</a></li>
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#">Sign out</a></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+  <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/sidebars.js"></script>
 </body>
-
 </html>

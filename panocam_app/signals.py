@@ -1,8 +1,12 @@
 from django.db.models.signals import post_save, class_prepared
 from django.dispatch import receiver
-from panocam_app.models import Camera, Configuration, MLModel
-from panocam_app.scripts import start_camera, start_all_cameras, THREADED_CAMERAS, ModelManager
-
+from panocam_app.models import (
+    Camera, Configuration, DetectionModel
+)
+from panocam_app.scripts import (
+    start_camera, start_all_cameras,
+    THREADED_CAMERAS, ModelManager
+)
 
 def camera_restart(camera_id: int):
     thread = THREADED_CAMERAS[camera_id]
@@ -29,6 +33,6 @@ def camera_configuration_assigned(sender, instance, **kwargs):
         camera_restart(camera.id)
 
 
-@receiver(post_save, sender=MLModel)
+@receiver(post_save, sender=DetectionModel)
 def update_models_on_save(sender, instance, **kwargs):
     ModelManager.update_models()
