@@ -54,7 +54,7 @@ class DetectionModel(models.Model):
     active = models.BooleanField(default=False)
 
     class Meta:
-        db_table = 'ml_model'
+        db_table = 'detection_model'
 
     def __str__(self):
         return f'{self.name} | active: {self.active}'
