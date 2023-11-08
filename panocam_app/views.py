@@ -1,10 +1,12 @@
+import shutil
+
 from django.shortcuts import render
 from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpResponse
 from django.core.files.storage import FileSystemStorage
 from django.views.decorators import gzip
 from werkzeug.utils import secure_filename
 from panocam_app.models import DetectionModel
-# from rknn.api import RKNN
+from rknn.api import RKNN
 
 from panocam_app.models import Camera
 from panocam_app.scripts import THREADED_CAMERAS
@@ -62,52 +64,97 @@ def camera_stream(request):
 
 
 def upload_page(request):
-    return render(request, "load_model.html")
+    models = DetectionModel.objects.all()
+    return render(request, 'load_model.html', {'models': models})
 
 
 UPLOAD_FOLDER = os.path.abspath('panocam_app/models')
+
+
+def change_model_status(request, model_id):
+    model = DetectionModel.objects.filter(id=model_id).first()
+    print(model)
+    if model is not None:
+        model.active = not model.active
+        model.save()
+        return HttpResponse({'message': 'Model status changed'})
+    else:
+        return HttpResponse({'message': 'Model not found'}, status=404)
 
 
 def allowed_file(filename):
     return filename.split('.')[-1] in ['tflite', 'onnx']
 
 
-def save_model_file(filename, saved_path, description, model_name=None):
-    saved_model = os.path.join(UPLOAD_FOLDER, saved_path)
-    file_prefix = os.path.splitext(filename)[0]
-    model_name = file_prefix if model_name is None else model_name
+def save_model_file(model_path, image_path, description, model_name=None):
+    model_file_name = os.path.basename(model_path)
+    model_file_prefix = os.path.splitext(model_file_name)[0]
+    model_dir = os.path.dirname(model_path)
 
-    # rknn = RKNN()
+    with open(os.path.join(model_dir, 'dataset.txt'), 'w') as dataset:
+        dataset.write(image_path)
+
+    rknn = RKNN()
     rknn.config(channel_mean_value='103.94 116.78 123.68 58.82', reorder_channel='0 1 2')
 
-    if filename.endswith(".tflite"):
+    if model_file_name.endswith('.tflite'):
         # Load a TensorFlow Lite model
-        model = rknn.load_tflite(model=saved_model)
+        model = rknn.load_tflite(model=model_file_prefix)
     else:
         # Load an ONNX model
-        model = rknn.load_onnx(model=saved_model)
+        model = rknn.load_onnx(model=model_file_prefix)
 
     if model != 0:
+        shutil.rmtree(model_dir, ignore_errors=True)
         return HttpResponse('Failed to load model')
 
-    rknn_model = os.path.join(UPLOAD_FOLDER, file_prefix)
-    saved_rknn_model = rknn.export_rknn(''.join([rknn_model, '.rknn']))
+    ret = rknn.build(do_quantization=True, dataset=os.path.join(model_dir, 'dataset.txt'))
+    if ret != 0:
+        shutil.rmtree(model_dir, ignore_errors=True)
+        return HttpResponse('Failed to build model')
+
+    rknn_model = os.path.join(os.path.dirname(model_path), f'{model_file_prefix}.rknn')
+    saved_rknn_model = rknn.export_rknn(rknn_model)
+
     if saved_rknn_model != 0:
+        shutil.rmtree(model_dir, ignore_errors=True)
         return HttpResponse('Failed to save model')
-    DetectionModel.objects.create(name=model_name, description=description, file_path=saved_model)
-    os.remove(saved_model)
+
+    DetectionModel.objects.create(name=model_name, description=description, file_path=rknn_model)
+    os.remove(model_path)
     return HttpResponse('File uploaded and processed successfully')
 
 
 def upload_file(request):
     if request.method == 'POST':
-        uploaded_file = request.FILES.get('file')
-        if allowed_file(uploaded_file.name):
-            filename = secure_filename(uploaded_file.name)
-            fs = FileSystemStorage(location=UPLOAD_FOLDER)
-            path_to_save = f'pre-saved-{filename}'
-            fs.save(path_to_save, uploaded_file)
-            return save_model_file(filename, path_to_save, request.POST.get('description'), request.POST.get('name'))
+        model_file = request.FILES.get('file')
+        image_file = request.FILES.get('image')
+        description = request.POST.get('description')
+        model_name = request.POST.get('name')
+
+        if allowed_file(model_file.name) and image_file:
+            folder_to_save = os.path.join(UPLOAD_FOLDER, request.POST.get('name'))
+            os.mkdir(folder_to_save)
+            fs = FileSystemStorage(location=folder_to_save)
+
+            model_to_save = os.path.join(folder_to_save, f'temp_{secure_filename(model_file.name)}')
+            image_to_save = os.path.join(folder_to_save, secure_filename(image_file.name))
+
+            fs.save(model_to_save, model_file)
+            fs.save(image_to_save, image_file)
+            return save_model_file(model_to_save, image_to_save, description, model_name)
         else:
             return HttpResponse('Invalid file format')
     return HttpResponse('Method is not allowed')
+
+
+def delete_model(request, model_id):
+    model = DetectionModel.objects.filter(id=model_id).first()
+    print(request.method)
+    if model:
+        model_dir = os.path.dirname(model.file_path)
+        shutil.rmtree(model_dir, ignore_errors=True)
+        model.delete()
+        return HttpResponse({"message": "Модель успешно удалена"})
+    else:
+        return HttpResponse({"error": "Модель не найдена"})

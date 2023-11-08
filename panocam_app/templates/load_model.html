@@ -120,6 +120,73 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+<!--new-->
+        .model-container {
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Add some more styles to make it look better */
+        .model-container p {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -131,48 +198,99 @@
         </div>
     </div>
     <div class="container">
-        <form method="post" enctype="multipart/form-data" action="{% url 'save_model' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="file">Выберите видеофайл</label>
-                <input type="file" name="file" class="form-control-file" id="file">
+        <div style="width: 50%">
+            <form method="post" enctype="multipart/form-data" action="{% url 'save_model' %}">
+                {% csrf_token %}
+                <label for="image" style="display: flex;">Выберите изображение для проверки модели</label>
+                <input type="file" name="image" class="form-control-file" id="image" style="display: flex; margin-bottom: 4%">
+
+                <label for="file" style="display: flex;">Выберите файл модели</label>
+                <input type="file" name="file" class="form-control-file" id="file" style="display: flex; margin-bottom: 4%">
+
+                <label for="name" style="display: flex;">Название модели</label>
+                <input type="text" name="name" class="form-control" id="name" placeholder="Название видео" style="display: flex; margin-bottom: 4%">
+
+                <label for="description" style="display: flex;">Описание модели</label>
+                <input type="text" name="description" class="form-control" id="description" placeholder="Описание видео" style="display: flex; margin-bottom: 4%">
+
+                <button type="submit" class="btn btn-primary" style="display: flex;">Загрузить</button>
+            </form>
+            <div id="response-container"></div>
+        </div>
+    <div style="width: 50%">
+        {% for model in models %}
+            <div class="model-container">
+                <p style="display: inline-block; width: 50%; float: left">{{ model.name }}</p>
+                <label class="switch" style="margin-top: 1%; float: left">
+                    <input type="checkbox" id="toggle-{{ model.id }}" {% if model.active %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+                <button class="delete-button" data-model-id="{{ model.id }}" style="float: left; margin-top: 1%;">Удалить</button>
             </div>
-            <div class="form-group">
-                <label for="name">Название модели</label>
-                <input type="text" name="name" class="form-control" id="name" placeholder="Название видео">
-            </div>
-            <div class="form-group">
-                <label for="description">Описание модели</label>
-                <input type="text" name="description" class="form-control" id="description" placeholder="Описание видео">
-            </div>
-            <button type="submit" class="btn btn-primary">Загрузить</button>
-        </form>
-        <div id="response-container"></div>
+            <script>
+                var checkbox = document.getElementById("toggle-{{ model.id }}");
+                var csrftoken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                var previousState = checkbox.checked;
+
+                checkbox.addEventListener("change", function() {
+                    var active = this.checked;
+
+                    if (active !== previousState) {
+                        $.ajax({
+                            type: "POST",
+                            url: "{% url 'change_model_status' model.id %}",
+                            data: {
+                                csrfmiddlewaretoken: csrftoken,
+                                active: active,
+                            },
+                            success: function() {
+                                // Обработчик успешной отправки
+                            },
+                        });
+                        previousState = active;
+                    }
+                });
+
+                var deleteButton = document.querySelector(".delete-button[data-model-id='{{ model.id }}']");
+
+                if (deleteButton) {
+                    deleteButton.addEventListener("click", function() {
+                        $.ajax({
+                            type: "POST",
+                            url: "{% url 'delete_model' model.id %}",
+                            data: {
+                                csrfmiddlewaretoken: csrftoken,
+                            },
+                            success: function() {
+                                // Обработчик успешного удаления
+                                location.reload(); // Перезагрузка страницы после удаления
+                            },
+                        });
+                    });
+                }
+            </script>
+        {% endfor %}
+    </div>
         <script>
             $(document).ready(function() {
-                // Обработчик отправки формы (при отправке файла)
                 $("form").submit(function(event) {
-                    event.preventDefault(); // Предотвратить обычное поведение формы
+                    event.preventDefault();
 
-                    // Отобразить модальное окно с прогрессом загрузки
                     $("#loading-modal").css("display", "block");
 
-                    // Создать FormData объект для отправки данных формы
                     var formData = new FormData($(this)[0]);
 
-                    // Отправить POST-запрос на сервер
                     $.ajax({
                         type: "POST",
                         url: "{% url 'save_model' %}",
                         data: formData,
-                        processData: false, // Не обрабатывать данные (файл передается как есть)
-                        contentType: false, // Не устанавливать тип содержимого (будет автоматически определен)
+                        processData: false,
+                        contentType: false,
                         success: function(response) {
-                            // Скрыть модальное окно после получения ответа
                             $("#loading-modal").css("display", "none");
 
-                            // Обновить содержимое элемента response-container с ответом от сервера
                             $("#response-container").html(response);
+                            window.location.href = "{% url 'upload_file' %}";
                         }
                     });
                 });
