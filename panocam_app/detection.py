@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-# from rknnlite.api import RKNNLite
+from rknnlite.api import RKNNLite
+
 
 class Rknn_yolov5s:
 
@@ -8,19 +9,19 @@ class Rknn_yolov5s:
             self,
             rknn_model: str,
             output_frame_size: tuple = (1280, 720)
-        ) -> None:
+    ) -> None:
         self.__rknn_model = Rknn_yolov5s.initRKNN(rknn_model)
         self.__output_frame_size = output_frame_size
         self.__classes = (
-            "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", 
-            "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", 
-            "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", 
-            "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", 
-            "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", 
-            "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", 
+            "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
+            "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+            "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+            "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball",
+            "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle",
+            "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange",
             "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant",
-            "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", 
-            "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", 
+            "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard",
+            "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock",
             "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
         )
         self.__obj_thresh = 0.25
@@ -32,7 +33,7 @@ class Rknn_yolov5s:
         ]
         self.__anchors = [
             [10, 13], [16, 30], [33, 23],
-            [30, 61], [62, 45],[59, 119],
+            [30, 61], [62, 45], [59, 119],
             [116, 90], [156, 198], [373, 326]
         ]
 
@@ -65,7 +66,7 @@ class Rknn_yolov5s:
         box_confidence = input[..., 4]
         box_confidence = np.expand_dims(box_confidence, axis=-1)
         box_class_probs = input[..., 5:]
-        box_xy = input[..., :2] *2 - 0.5
+        box_xy = input[..., :2] * 2 - 0.5
 
         col = np.tile(np.arange(0, grid_w), grid_w).reshape(-1, grid_w)
         row = np.tile(np.arange(0, grid_h).reshape(-1, 1), grid_h)
@@ -75,7 +76,7 @@ class Rknn_yolov5s:
         box_xy += grid
         box_xy *= int(self.__image_size[0] / grid_h)
 
-        box_wh = pow(input[..., 2:4] *2, 2)
+        box_wh = pow(input[..., 2:4] * 2, 2)
         box_wh = box_wh * anchors
 
         return np.concatenate((box_xy, box_wh), axis=-1), box_confidence, box_class_probs
@@ -195,7 +196,7 @@ class Rknn_yolov5s:
                 current_x = 0
 
             combined_frame[frame_height:combined_height, current_x:current_x + object_width] = object_image
-            current_x += object_width # сдвигаем текущее положение
+            current_x += object_width  # сдвигаем текущее положение
 
         combined_frame[:init_frame_height, :frame_width] = frame
         return cv2.resize(combined_frame, self.__output_frame_size)
@@ -205,9 +206,9 @@ class Rknn_yolov5s:
         frame = cv2.resize(frame, self.__image_size)
         outputs = self.__rknn_model.inference(inputs=[frame])
 
-        input0_data = outputs[0].reshape([3, -1]+list(outputs[0].shape[-2:]))
-        input1_data = outputs[1].reshape([3, -1]+list(outputs[1].shape[-2:]))
-        input2_data = outputs[2].reshape([3, -1]+list(outputs[2].shape[-2:]))
+        input0_data = outputs[0].reshape([3, -1] + list(outputs[0].shape[-2:]))
+        input1_data = outputs[1].reshape([3, -1] + list(outputs[1].shape[-2:]))
+        input2_data = outputs[2].reshape([3, -1] + list(outputs[2].shape[-2:]))
 
         input_data = list()
         input_data.append(np.transpose(input0_data, (2, 3, 0, 1)))
