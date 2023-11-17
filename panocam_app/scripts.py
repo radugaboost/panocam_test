@@ -5,7 +5,7 @@ from datetime import datetime
 from threading import Thread
 from queue import Queue
 from panocam_app.detection import Rknn_yolov5s
-import numpy as np
+from panocam_app.reformat_frame import warp_image
 
 THREADED_CAMERAS = dict()
 
@@ -101,7 +101,8 @@ class ThreadedCamera(object):
     def update(self):
         while not self.stop:
             success, frame = self.capture.read()
-            flipped_frame = cv2.flip(frame, 1)  # зеркалит кадр
+            warped_frame = warp_image(frame)
+            flipped_frame = (cv2.flip(warped_frame, 1))  # зеркалит кадр
 
             if success:
                 self.__frame = ModelManager.process_models(flipped_frame)
