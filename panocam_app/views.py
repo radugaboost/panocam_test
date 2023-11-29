@@ -1,4 +1,5 @@
 import shutil
+import cv2
 
 from django.shortcuts import render
 from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpResponse
@@ -6,7 +7,7 @@ from django.core.files.storage import FileSystemStorage
 from django.views.decorators import gzip
 from werkzeug.utils import secure_filename
 from panocam_app.models import DetectionModel
-from rknn.api import RKNN
+# from rknn.api import RKNN
 
 from panocam_app.models import Camera
 from panocam_app.scripts import THREADED_CAMERAS
@@ -33,20 +34,29 @@ def video_list(request):
 def get_available_cameras():
     return Camera.objects.all()
 
-
-def generate(camera_id: int):
+def generate(camera_id: int, attrs: tuple = None):
     capture = THREADED_CAMERAS[camera_id]
     while True:
-        jpeg = capture.show_frame()
+        frame = capture.show_frame()
+        if attrs:
+            width, height = frame.shape[:2]
+            top = int((attrs[0] * height) / 100)
+            left = int((attrs[1] * width) / 100)
+            width = int((attrs[2] * width) / 100)
+            height = int((attrs[3] * height) / 100)
+            frame = frame[top:top + height, left:left + width]
+        _, jpeg = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
-
 
 @gzip.gzip_page
 def camera(request, camera_id: int):
     if camera_id in THREADED_CAMERAS.keys():
+        attrs = request.GET.get('attrs')
+        if attrs:
+            attrs = tuple(map(float, attrs.split(',')))
         return StreamingHttpResponse(
-            generate(camera_id),
+            generate(camera_id, attrs),
             content_type='multipart/x-mixed-replace; boundary=frame'
         )
     return HttpResponseNotFound()

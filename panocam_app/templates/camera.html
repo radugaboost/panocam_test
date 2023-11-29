@@ -8,6 +8,26 @@
   <link href="/static/assets/css/bootstrap.min.css" rel="stylesheet">
   <link href="/static/css/sidebar.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .test {
+    position: absolute;
+    top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #337AB7; /* Green background color */
+    color: white; /* White text color */
+    border-radius: 12px; /* Rounded corners */
+    cursor: pointer;
+    border: 1px solid #337AB7; /* Green border */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Add a smooth transition */
+
+    /* Hover effect */
+    &:hover {
+        background-color: white;
+        color: #337AB7;
+    }
+}
+  </style>
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
@@ -59,21 +79,9 @@
           </a>
         </li>
       </ul>
-      <div class="dropdown border-top">
-        <a href="#" class="d-flex align-items-center justify-content-center p-3 link-dark text-decoration-none dropdown-toggle" id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
-          <img src="https://github.com/mdo.png" alt="mdo" width="24" height="24" class="rounded-circle">
-        </a>
-        <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser3">
-          <li><a class="dropdown-item" href="#">New project...</a></li>
-          <li><a class="dropdown-item" href="#">Settings</a></li>
-          <li><a class="dropdown-item" href="#">Profile</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#">Sign out</a></li>
-        </ul>
-      </div>
     </div>
-    <div class="content-container">
-      <div onclick="prevStream()" class="arrow-6 left">
+    <div id="content" class="content-container">
+      <div onclick="prevStream()" class="arrow-6 left" style="z-index: 2;">
         <svg width="18px" height="17px" viewBox="0 0 18 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
             <g transform="translate(8.500000, 8.500000) scale(-1, 1) translate(-8.500000, -8.500000)">
                 <polygon class="arrow-6-pl" points="16.3746667 8.33860465 7.76133333 15.3067621 6.904 14.3175671 14.2906667 8.34246869 6.908 2.42790698 7.76 1.43613596"></polygon>
@@ -82,7 +90,7 @@
             </g>
         </svg>
       </div>
-      <div onclick="nextStream()" class="arrow-6 right">
+      <div onclick="nextStream()" class="arrow-6 right" style="z-index: 2;">
         <svg width="18px" height="17px" viewBox="-1 0 18 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
             <g>
                 <polygon class="arrow-6-pl" points="16.3746667 8.33860465 7.76133333 15.3067621 6.904 14.3175671 14.2906667 8.34246869 6.908 2.42790698 7.76 1.43613596"></polygon>
@@ -91,7 +99,15 @@
             </g>
         </svg>
       </div>
-      <img id="stream" src="">
+        <img id="stream" scr="" style="pointer-events: none;"></img>
+        <canvas id="selection-canvas" style="width: 100%; height: 100%; position: absolute;"></canvas>
+        <button id="selectAreaBtn" class="test" style="position: absolute; top: 20px;">Выделить область</button>
+        <svg onclick="openAreaUrl()" id="submitArea" style="position: absolute; display: none;" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 0 56 56">
+          <linearGradient id="HoiJCu43QtshzIrYCxOfCa_VFaz7MkjAiu0_gr1" x1="21.241" x2="3.541" y1="39.241" y2="21.541" gradientUnits="userSpaceOnUse"><stop offset=".108" stop-color="#0d7044"></stop><stop offset=".433" stop-color="#11945a"></stop></linearGradient><path fill="url(#HoiJCu43QtshzIrYCxOfCa_VFaz7MkjAiu0_gr1)" d="M16.599,41.42L1.58,26.401c-0.774-0.774-0.774-2.028,0-2.802l4.019-4.019	c0.774-0.774,2.028-0.774,2.802,0L23.42,34.599c0.774,0.774,0.774,2.028,0,2.802l-4.019,4.019	C18.627,42.193,17.373,42.193,16.599,41.42z"></path><linearGradient id="HoiJCu43QtshzIrYCxOfCb_VFaz7MkjAiu0_gr2" x1="-15.77" x2="26.403" y1="43.228" y2="43.228" gradientTransform="rotate(134.999 21.287 38.873)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2ac782"></stop><stop offset="1" stop-color="#21b876"></stop></linearGradient><path fill="url(#HoiJCu43QtshzIrYCxOfCb_VFaz7MkjAiu0_gr2)" d="M12.58,34.599L39.599,7.58c0.774-0.774,2.028-0.774,2.802,0l4.019,4.019	c0.774,0.774,0.774,2.028,0,2.802L19.401,41.42c-0.774,0.774-2.028,0.774-2.802,0l-4.019-4.019	C11.807,36.627,11.807,35.373,12.58,34.599z"></path>
+        </svg>
+        <svg onclick="afterDrawing()" id="deleteArea" style="position: absolute; display: none;" width="48" height="48" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M4.11 2.697L2.698 4.11 6.586 8l-3.89 3.89 1.415 1.413L8 9.414l3.89 3.89 1.413-1.415L9.414 8l3.89-3.89-1.415-1.413L8 6.586l-3.89-3.89z" fill="#B22222"></path>
+        </svg>
       <div class="spinner-border" style="width: 6rem; height: 6rem;" role="status">
         <span class="visually-hidden" style="position: center;"></span>
       </div>
@@ -100,5 +116,6 @@
   <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
   <script src="/static/js/sidebars.js"></script>
   <script src="/static/js/index.js"></script>
+  <script src="/static/js/select.js"></script>
 </body>
 </html>

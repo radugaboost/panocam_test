@@ -111,8 +111,7 @@ class ThreadedCamera(object):
                     self.queue.put(self.__frame)
 
     def show_frame(self):
-        _, jpeg = cv2.imencode('.jpg', self.__frame)
-        return jpeg
+        return self.__frame
 
     def restart(self):
         self.stop = True
