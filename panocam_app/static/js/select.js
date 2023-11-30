@@ -6,9 +6,7 @@ document.body.appendChild(rectangle);
 
 const contentContainer = document.getElementById("content")
 const selectAreaBtn = document.getElementById("selectAreaBtn");
-const separateBtn = document.getElementById("submitArea");
-const deleteBtn = document.getElementById("deleteArea");
-
+const optionsArea = document.getElementById("selectChoice")
 let areaUrl = '';
 let isDrawingEnabled = false;
 let isDragged = false;
@@ -58,23 +56,20 @@ const redrawRectangle = () => {
   rectangle.style.width = width + "px";
 
   const image = document.getElementById("stream");
-  const originalWidth = image.width - relativeX;
+  const originalWidth = image.width;
   const originalHeight = image.height;
 
   // относительные координаты
-  const percentTop = ((top - relativeX) / originalHeight) * 100;
-  const percentLeft = ((left + relativeX) / originalWidth) * 100;
-  const percentWidth = ((width + relativeX) / originalWidth) * 100;
-  const percentHeight = ((height - relativeX) / originalHeight) * 100;
+  const percentTop = (top / originalHeight);
+  const percentLeft = ((left - relativeX) / originalWidth);
+  const percentWidth = ((width) / originalWidth);
+  const percentHeight = (height / originalHeight);
 
   const attrs = `${percentTop}, ${percentLeft}, ${percentWidth}, ${percentHeight}`
   areaUrl = 'http://127.0.0.1:8000/camera_stream/1/?attrs=' + attrs
 
-
-  separateBtn.style.top = top + height + "px";
-  separateBtn.style.left = left + width - (relativeX / 3) + "px";
-  deleteBtn.style.top = top + height + "px";
-  deleteBtn.style.left = left + width - relativeX + "px";
+  optionsArea.style.top = top + height + "px";
+  optionsArea.style.left = left + width - relativeX + "px";
 };
 
 function toggleRectangleDrawing () {
@@ -105,7 +100,6 @@ function handleMouseMove(e) {
 
 function openAreaUrl() {
   window.open(areaUrl, '_blank');
-  separateBtn.style.display = 'none';
 }
 
 function handleMouseUp(e) {
@@ -114,15 +108,13 @@ function handleMouseUp(e) {
     redrawRectangle();
     isDragged = false;
     isDrawingEnabled = false;
-    separateBtn.style.display = 'block';
-    deleteBtn.style.display = 'block'
+    optionsArea.style.display = 'flex';
   }
 }
 
 function afterDrawing () {
+  optionsArea.style.display = 'none';
   rectangle.style.display = 'none';
-  separateBtn.style.display = 'none';
-  deleteBtn.style.display = 'none';
 }
 
 contentContainer.addEventListener("mousedown", handleMouseDown);

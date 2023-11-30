@@ -39,11 +39,11 @@ def generate(camera_id: int, attrs: tuple = None):
     while True:
         frame = capture.show_frame()
         if attrs:
-            width, height = frame.shape[:2]
-            top = int((attrs[0] * height) / 100)
-            left = int((attrs[1] * width) / 100)
-            width = int((attrs[2] * width) / 100)
-            height = int((attrs[3] * height) / 100)
+            height, width = frame.shape[:2]
+            top = int((attrs[0] * height))
+            left = int((attrs[1] * width))
+            width = int((attrs[2] * width))
+            height = int((attrs[3] * height))
             frame = frame[top:top + height, left:left + width]
         _, jpeg = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'

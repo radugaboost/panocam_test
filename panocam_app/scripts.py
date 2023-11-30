@@ -28,17 +28,6 @@ def create_capture(camera_id: int, timeout=1):
         sleep(0.5)  # Пауза перед повторной попыткой
         capture = cv2.VideoCapture(int(camera.ip))
 
-    settings = camera.image_config
-    resolution = settings.resolution.split('x')
-
-    # capture.set(3, int(resolution[0]))  # ширина
-    # capture.set(4, int(resolution[1]))  # высота
-    # capture.set(cv2.CAP_PROP_BRIGHTNESS, settings.brightness)  # яркость
-    # capture.set(cv2.CAP_PROP_HUE, settings.hue) # оттенок
-    # capture.set(cv2.CAP_PROP_CONTRAST, settings.contrast) # контрастность
-    # capture.set(cv2.CAP_PROP_SATURATION, settings.saturation) # насыщенность
-    # capture.set(cv2.CAP_PROP_FPS, settings.frame_rate) # частота кадров
-
     return capture
 
 
