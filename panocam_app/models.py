@@ -21,7 +21,7 @@ class Configuration(models.Model):
 
 
 class Camera(models.Model):
-    ip = models.CharField(null=False, max_length=24)
+    ip = models.CharField(null=False, max_length=240)
     mask = models.CharField(null=False, max_length=24)
     name = models.CharField(null=False, max_length=30)
     user = models.ForeignKey(User, models.CASCADE, blank=True, null=False)

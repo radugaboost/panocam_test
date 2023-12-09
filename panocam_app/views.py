@@ -1,8 +1,10 @@
 import shutil
 import cv2
+from json import loads
+import numpy as np
 
 from django.shortcuts import render
-from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpResponse
+from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpResponse, JsonResponse
 from django.core.files.storage import FileSystemStorage
 from django.views.decorators import gzip
 from werkzeug.utils import secure_filename
@@ -34,29 +36,63 @@ def video_list(request):
 def get_available_cameras():
     return Camera.objects.all()
 
-def generate(camera_id: int, attrs: tuple = None):
-    capture = THREADED_CAMERAS[camera_id]
+def add_area(request, camera_id: int):
+    camera = THREADED_CAMERAS.get(camera_id)
+    if camera:
+        areas = camera.areas
+        data = request.body.decode('utf-8')
+        json_data = loads(data)
+        frame = camera.show_frame()
+        points = json_data['points']
+        height, width = json_data['shape']
+        relative_points = [
+            (point['x'] / width, point['y'] / height) 
+            for point in points
+        ]
+        init_height, init_width = frame.shape[:2]
+        x_values = [int(point[0] * init_width) for point in relative_points]
+        y_values = [int(point[1] * init_height) for point in relative_points]
+        points = [(x, y) for x, y in zip(x_values, y_values)]
+        top, height = min(y_values), max(y_values)
+        left, width = min(x_values), max(x_values)
+        area_id = len(areas) + 1
+        areas[area_id] = [(top, left, width, height), points]
+        return JsonResponse(data={'area_id': area_id}, status=201)
+
+    return JsonResponse(data='Not found',status=404)
+
+def generate(camera: cv2.VideoCapture, area: list):
     while True:
-        frame = capture.show_frame()
-        if attrs:
-            height, width = frame.shape[:2]
-            top = int((attrs[0] * height))
-            left = int((attrs[1] * width))
-            width = int((attrs[2] * width))
-            height = int((attrs[3] * height))
-            frame = frame[top:top + height, left:left + width]
+        frame = camera.show_frame()
+        if area:
+            borders = area[0]
+            points = area[1]
+
+            mask = np.zeros(frame.shape, dtype=np.uint8)
+            roi_corners = np.array(points, dtype=np.int32)
+            channel_count = frame.shape[2]
+            ignore_mask_color = (255,) * channel_count
+            cv2.fillPoly(mask, [roi_corners], ignore_mask_color)
+            masked_image = cv2.bitwise_and(frame, mask)
+
+            top = borders[0]
+            left = borders[1]
+            width = borders[2] - left
+            height = borders[3] - top
+
+            frame = masked_image[top:top + height, left:left + width]
         _, jpeg = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
 @gzip.gzip_page
-def camera(request, camera_id: int):
-    if camera_id in THREADED_CAMERAS.keys():
-        attrs = request.GET.get('attrs')
-        if attrs:
-            attrs = tuple(map(float, attrs.split(',')))
+def camera(request, camera_id: int, area_id: int = None):
+    camera = THREADED_CAMERAS.get(camera_id)
+    area = camera.areas.get(area_id)
+
+    if camera:
         return StreamingHttpResponse(
-            generate(camera_id, attrs),
+            generate(camera, area),
             content_type='multipart/x-mixed-replace; boundary=frame'
         )
     return HttpResponseNotFound()

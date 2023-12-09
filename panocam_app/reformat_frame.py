@@ -32,31 +32,3 @@ def warp_image(img, min_divisions=20):
     result = np.hstack(warped_parts)
 
     return result
-
-
-def start_streem():
-    cv2.namedWindow('Warped Video', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Warped Video', 640, 480)
-    cv2.namedWindow('Input Video', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Input Video', 640, 480)
-    video_capture = cv2.VideoCapture('rtsp://admin:F56-sdfw6732@77.232.155.123')
-
-    while True:
-        ret, frame = video_capture.read()
-        if not ret:
-            break
-
-        result_frame = warp_image(frame)
-
-        cv2.imshow('Warped Video', result_frame)
-        cv2.imshow('Input Video', frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    video_capture.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == '__main__':
-    start_streem()

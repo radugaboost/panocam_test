@@ -10,6 +10,8 @@ router.register(r'Label', api_models.LabelViewSet)
 
 urlpatterns = [
     path('camera_stream/<int:camera_id>/', views.camera, name='camera_stream'),
+    path('camera_stream/<int:camera_id>/<int:area_id>', views.camera, name='camera_stream'),
+    path('add_area/<int:camera_id>/', views.add_area, name='add_area'),
     path('camera/', views.camera_stream, name='camera'),
     path('rest/', include(router.urls)),
     path('video_list/', views.video_list, name='video_list'),

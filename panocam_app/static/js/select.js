@@ -1,128 +1,211 @@
-const rectangle = document.createElement("div");
-rectangle.style.position = "absolute";
-rectangle.style.backgroundColor = "rgba(204,230,255, 0.7)";
-rectangle.style.border = "1px dashed black";
-document.body.appendChild(rectangle);
+class ContourArea {
+  constructor() {
+    this.canvas = null;
+    this.areaClosed = false;
+    this.points = [];
+    this.relativeX = null;
+    this.optionsArea = null;
+    this.content = null;
+    this.image = null;
+  }
 
-const contentContainer = document.getElementById("content")
-const selectAreaBtn = document.getElementById("selectAreaBtn");
-const optionsArea = document.getElementById("selectChoice")
-let areaUrl = '';
-let isDrawingEnabled = false;
-let isDragged = false;
-let rectangleCoords = [];
+  updateCanvasSize() {
+    this.canvas.width = this.image.width;
+    this.canvas.height = this.image.height;
+  }
 
+  startDrawing() {
+    this.canvas = document.createElement("canvas");
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.zIndex = 1;
+    this.image = document.getElementById("stream");
+    this.canvas.width = this.image.width;
+    this.canvas.height = this.image.height;
+    this.content = document.getElementById("content");
+    this.optionsArea = document.getElementById("selectChoice");
+    this.relativeX = this.content.getBoundingClientRect().left
+    document.body.style.cursor = 'crosshair';
+    this.changeArrowsDisplay('none');
 
-selectAreaBtn.addEventListener("click", function () {
-  toggleRectangleDrawing();
-});
+    this.drawDarkenedRectangle(this.canvas.getContext('2d'));
 
+    this.content.appendChild(this.canvas);
+    this.setupCanvasListeners();
+  }
 
-const clearRectangleCoords = () => {
-  rectangleCoords = [];
-};
+  changeArrowsDisplay(arg) {
+    const arrows = Array.from(document.querySelectorAll('.arrow-6')).slice(0, 2);
+    for (i in arrows) {
+      arrows[i].style.display = arg;
+    }
+  }
 
+  setupCanvasListeners() {
+    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
+    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
+    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
+  }
 
-const addFirstRectangleCoords = coords => {
-  rectangleCoords[0] = coords;
-};
+  findClickedPoint(x, y) {
+    for (let i = 0; i < this.points.length; i++) {
+      if (Math.abs(x - this.points[i].x) < 10 && Math.abs(y - this.points[i].y) < 10) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
+  drawConnectingLines(ctx) {
+    ctx.strokeStyle = 'red';
+    ctx.moveTo(this.points[0].x, this.points[0].y);
 
-const addSecondRectangleCoords = coords => {
-  rectangleCoords[1] = coords;
-};
+    for (let i = 1; i < this.points.length; i++) {
+      ctx.lineTo(this.points[i].x, this.points[i].y);
+    }
+    ctx.stroke();
+  }
 
+  drawPoints(ctx) {
+    ctx.fillStyle = 'red';
 
-function relativeSize(e) {
-  const containerRect = contentContainer.getBoundingClientRect();
-  const relativeX = e.pageX - containerRect.left;
-  const relativeY = e.pageY - containerRect.top;
-  return { x: relativeX, y: relativeY };
+    for (let i = 0; i < this.points.length; i++) {
+      ctx.beginPath();
+      ctx.arc(this.points[i].x, this.points[i].y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+
+  drawSelectedArea(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(this.points[0].x, this.points[0].y);
+
+    for (let i = 1; i < this.points.length; i++) {
+      ctx.lineTo(this.points[i].x, this.points[i].y);
+    }
+
+    ctx.fillStyle = 'white';
+    ctx.globalAlpha = 0.5;
+    ctx.fill();
+    ctx.stroke();
+
+    const firstPoint = this.points[0];
+    const optionsAreaLeft = Math.max(firstPoint.x - this.relativeX, this.relativeX);
+    const optionsAreaTop = firstPoint.y;
+
+    const maxXPage = this.image.width - this.optionsAreaWidth;
+    const maxYPage = this.image.height - this.optionsAreaHeight;
+    this.optionsArea.style.zIndex = 2;
+    this.optionsArea.style.left = Math.min(optionsAreaLeft, maxXPage) + 'px';
+    this.optionsArea.style.top = Math.min(optionsAreaTop, maxYPage) + 'px';
+  }
+
+  drawDarkenedRectangle(ctx) {
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.globalAlpha = 1;
+  }
+
+  handleMouseDown(e) {
+    const clickedPointIndex = this.findClickedPoint(e.clientX - this.relativeX, e.clientY);
+
+    if (clickedPointIndex !== -1 || this.areaClosed) {
+      this.selectedPointIndex = clickedPointIndex;
+      this.isDrawing = true;
+    }
+
+    if (clickedPointIndex === 0 && !this.areaClosed) {
+      document.body.style.cursor = 'default';
+      this.isDrawing = true;
+      this.areaClosed = true;
+      this.drawSelectedArea(this.canvas.getContext('2d'));
+    }
+
+    if (!this.areaClosed && clickedPointIndex === -1) {
+      this.points.push({ x: e.clientX - this.relativeX, y: e.clientY });
+      const ctx = this.canvas.getContext('2d');
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.drawDarkenedRectangle(ctx);
+      this.drawConnectingLines(ctx);
+      this.drawPoints(ctx);
+    }
+  }
+
+  handleMouseMove(e) {
+    if (this.selectedPointIndex !== -1 & this.isDrawing) {
+      this.optionsArea.style.display = 'none';
+      this.points[this.selectedPointIndex] = { x: e.clientX - this.relativeX, y: e.clientY };
+
+      const ctx = this.canvas.getContext('2d');
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.drawDarkenedRectangle(ctx);
+      if (this.areaClosed) {
+        this.drawSelectedArea(ctx);
+      } else {
+        this.drawConnectingLines(ctx);
+      }
+      this.drawPoints(ctx);
+    }
+  }
+
+  handleMouseUp() {
+    if (this.selectedPointIndex !== -1 & this.isDrawing) {
+      this.optionsArea.style.display = 'block';
+      this.optionsAreaWidth = this.optionsArea.offsetWidth;
+      this.optionsAreaHeight = this.optionsArea.offsetHeight;
+    }
+    this.isDrawing = false;
+    this.selectedPointIndex = -1;
+  }
+
+  updateContour() {
+    const csrfTokenInput = document.getElementsByName('csrfmiddlewaretoken')[0];
+    const csrfToken = csrfTokenInput.value;
+
+    fetch("http://127.0.0.1:8000/add_area/1/", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ 'points': this.points, 'shape': [this.image.height, this.image.width] })
+    })
+    .then(response => response.json())
+    .then(data => {
+      window.open(`${this.image.src}${data.area_id}`, '_blank');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+  }
+
+  clear() {
+    this.optionsArea.style.display = 'none';
+    if (this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+    };
+    this.canvas.removeEventListener("mousedown", this.handleMouseDown);
+    this.canvas.removeEventListener("mousemove", this.handleMouseMove);
+    this.canvas.removeEventListener("mouseup", this.handleMouseUp);
+    this.changeArrowsDisplay('block');
+    this.areaClosed = false;
+    this.points = [];
+  }
 }
 
+const contourArea = new ContourArea();
+const selectAreaBtn = document.getElementById("selectArea");
 
-const redrawRectangle = () => {
-  const containerRect = contentContainer.getBoundingClientRect();
-  const relativeX = containerRect.left;
-
-  const top = Math.min(rectangleCoords[0].y, rectangleCoords[1].y);
-  const height = Math.max(rectangleCoords[0].y, rectangleCoords[1].y) - top;
-  const left = Math.min(rectangleCoords[0].x, rectangleCoords[1].x);
-  const width = Math.max(rectangleCoords[0].x, rectangleCoords[1].x) - left;
-
-  rectangle.style.top = top + "px";
-  rectangle.style.height = height + "px";
-  rectangle.style.left = left + "px";
-  rectangle.style.width = width + "px";
-
-  const image = document.getElementById("stream");
-  const originalWidth = image.width;
-  const originalHeight = image.height;
-
-  // относительные координаты
-  const percentTop = (top / originalHeight);
-  const percentLeft = ((left - relativeX) / originalWidth);
-  const percentWidth = ((width) / originalWidth);
-  const percentHeight = (height / originalHeight);
-
-  const attrs = `${percentTop}, ${percentLeft}, ${percentWidth}, ${percentHeight}`
-  areaUrl = 'http://127.0.0.1:8000/camera_stream/1/?attrs=' + attrs
-
-  optionsArea.style.top = top + height + "px";
-  optionsArea.style.left = left + width - relativeX + "px";
-};
-
-function toggleRectangleDrawing () {
-  if (isDrawingEnabled) {
-    isDrawingEnabled = false;
-  } else {
-    isDrawingEnabled = true;
-  }
-};
-
-function handleMouseDown(e) {
-  if (isDrawingEnabled) {
-    rectangle.style.display = "block";
-    isDragged = true;
-    clearRectangleCoords();
-    addFirstRectangleCoords({ x: e.pageX, y: e.pageY });
-    addSecondRectangleCoords({ x: e.pageX, y: e.pageY });
-    redrawRectangle();
-  }
-}
-
-function handleMouseMove(e) {
-  if (isDrawingEnabled && isDragged) {
-    addSecondRectangleCoords({ x: e.pageX, y: e.pageY });
-    redrawRectangle();
-  }
+function draw() {
+  selectAreaBtn.style.display = 'none';
+  contourArea.startDrawing();
 }
 
 function openAreaUrl() {
-  window.open(areaUrl, '_blank');
+  contourArea.updateContour();
 }
 
-function handleMouseUp(e) {
-  if (isDrawingEnabled && isDragged) {
-    addSecondRectangleCoords({ x: e.pageX, y: e.pageY });
-    redrawRectangle();
-    isDragged = false;
-    isDrawingEnabled = false;
-    optionsArea.style.display = 'flex';
-  }
-}
-
-function afterDrawing () {
-  optionsArea.style.display = 'none';
-  rectangle.style.display = 'none';
-}
-
-contentContainer.addEventListener("mousedown", handleMouseDown);
-contentContainer.addEventListener("mousemove", handleMouseMove);
-contentContainer.addEventListener("mouseup", handleMouseUp);
-
-function removeEventListeners() {
-  contentContainer.removeEventListener("mousedown", handleMouseDown);
-  contentContainer.removeEventListener("mousemove", handleMouseMove);
-  contentContainer.removeEventListener("mouseup", handleMouseUp);
+function afterDrawing() {
+  selectAreaBtn.style.display = 'block';
+  contourArea.clear();
 }

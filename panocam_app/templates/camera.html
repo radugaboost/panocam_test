@@ -1,3 +1,4 @@
+{% csrf_token %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -81,7 +82,7 @@
       </ul>
     </div>
     <div id="content" class="content-container">
-      <div onclick="prevStream()" class="arrow-6 left" style="z-index: 2;">
+      <div onclick="prevStream()" class="arrow-6 left" style="z-index: 1;">
         <svg width="18px" height="17px" viewBox="0 0 18 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
             <g transform="translate(8.500000, 8.500000) scale(-1, 1) translate(-8.500000, -8.500000)">
                 <polygon class="arrow-6-pl" points="16.3746667 8.33860465 7.76133333 15.3067621 6.904 14.3175671 14.2906667 8.34246869 6.908 2.42790698 7.76 1.43613596"></polygon>
@@ -90,7 +91,7 @@
             </g>
         </svg>
       </div>
-      <div onclick="nextStream()" class="arrow-6 right" style="z-index: 2;">
+      <div onclick="nextStream()" class="arrow-6 right" style="z-index: 1;">
         <svg width="18px" height="17px" viewBox="-1 0 18 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
             <g>
                 <polygon class="arrow-6-pl" points="16.3746667 8.33860465 7.76133333 15.3067621 6.904 14.3175671 14.2906667 8.34246869 6.908 2.42790698 7.76 1.43613596"></polygon>
@@ -100,10 +101,11 @@
         </svg>
       </div>
         <img id="stream" scr="" style="pointer-events: none;"></img>
-        <canvas id="selection-canvas" style="width: 100%; height: 100%; position: absolute;"></canvas>
-        <button id="selectAreaBtn" class="test" style="position: absolute; top: 20px;">Выделить область</button>
+        <button id="selectArea" onclick="draw()" class="test">
+          <span>Выделить область</span>
+        </button>
         <div id="selectChoice" style="border-radius: 12px; max-width: 3%; height: auto; flex-direction: row; position: absolute; border: 2px solid rgb(183, 51, 51); background-color: #ffffff8c; display: none; padding: 4px;">
-          <svg onclick="openAreaUrl()" style="position: relative; display: block; width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="0 -8 64 64">
+          <svg onclick="openAreaUrl()" style="position: relative; display: block; width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="48" height="48" viewBox="-8 -8 64 64">
             <linearGradient id="HoiJCu43QtshzIrYCxOfCa_VFaz7MkjAiu0_gr1" x1="21.241" x2="3.541" y1="39.241" y2="21.541" gradientUnits="userSpaceOnUse"><stop offset=".108" stop-color="#0d7044"></stop><stop offset=".433" stop-color="#11945a"></stop></linearGradient><path fill="url(#HoiJCu43QtshzIrYCxOfCa_VFaz7MkjAiu0_gr1)" d="M16.599,41.42L1.58,26.401c-0.774-0.774-0.774-2.028,0-2.802l4.019-4.019	c0.774-0.774,2.028-0.774,2.802,0L23.42,34.599c0.774,0.774,0.774,2.028,0,2.802l-4.019,4.019	C18.627,42.193,17.373,42.193,16.599,41.42z"></path><linearGradient id="HoiJCu43QtshzIrYCxOfCb_VFaz7MkjAiu0_gr2" x1="-15.77" x2="26.403" y1="43.228" y2="43.228" gradientTransform="rotate(134.999 21.287 38.873)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2ac782"></stop><stop offset="1" stop-color="#21b876"></stop></linearGradient><path fill="url(#HoiJCu43QtshzIrYCxOfCb_VFaz7MkjAiu0_gr2)" d="M12.58,34.599L39.599,7.58c0.774-0.774,2.028-0.774,2.802,0l4.019,4.019	c0.774,0.774,0.774,2.028,0,2.802L19.401,41.42c-0.774,0.774-2.028,0.774-2.802,0l-4.019-4.019	C11.807,36.627,11.807,35.373,12.58,34.599z"></path>
           </svg>
           <svg onclick="afterDrawing()" style="position: relative; display: block; width: 100%; height: auto;" width="48" height="48" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">

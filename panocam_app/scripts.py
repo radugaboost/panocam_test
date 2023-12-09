@@ -17,7 +17,7 @@ def get_available_cameras():
 def create_capture(camera_id: int, timeout=1):
     camera = Camera.objects.get(id=camera_id)
     start_time = time()
-    capture = cv2.VideoCapture(int(camera.ip))
+    capture = cv2.VideoCapture(camera.ip)
 
     while not capture.isOpened():
         elapsed_time = time() - start_time
@@ -26,7 +26,7 @@ def create_capture(camera_id: int, timeout=1):
             return False
 
         sleep(0.5)  # Пауза перед повторной попыткой
-        capture = cv2.VideoCapture(int(camera.ip))
+        capture = cv2.VideoCapture(camera.ip)
 
     return capture
 
@@ -53,6 +53,7 @@ class ThreadedCamera(object):
     def __init__(self, src=0):
         self.__frame = None
         self.src = src
+        self.areas = dict()
         self.queue = None
         self.start_video()
 
