@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class Configuration(models.Model):
@@ -26,6 +27,7 @@ class Camera(models.Model):
     name = models.CharField(null=False, max_length=30)
     user = models.ForeignKey(User, models.CASCADE, blank=True, null=False)
     image_config = models.ForeignKey(Configuration, models.DO_NOTHING, blank=True, null=False)
+    is_recording = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'camera'
@@ -58,3 +60,16 @@ class DetectionModel(models.Model):
 
     def __str__(self):
         return f'{self.name} | active: {self.active}'
+
+
+class VideoRecord(models.Model):
+    name = models.CharField(max_length=100, default=timezone.now)
+    start = models.DateTimeField(null=False, default=timezone.now)
+    end = models.DateTimeField(null=True)
+    saving_path = models.CharField(max_length=200, default=timezone.now)
+
+    class Meta:
+        db_table = 'video_record'
+
+    def __str__(self):
+        return f'{self.name}'

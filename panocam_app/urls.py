@@ -7,6 +7,7 @@ router.register(r'User', api_models.UserViewSet)
 router.register(r'Configuration', api_models.ConfigurationViewSet)
 router.register(r'Camera', api_models.CameraViewSet)
 router.register(r'Label', api_models.LabelViewSet)
+router.register(r'VideoRecord', api_models.VideoRecordSet)
 
 urlpatterns = [
     path('camera_stream/<int:camera_id>/', views.camera, name='camera_stream'),

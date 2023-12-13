@@ -1,7 +1,8 @@
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
-from .serializers import ConfigurationSerializer, CameraSerializer, LabelSerializer, UserSerializer
-from .models import Configuration, Camera, Label
+from .serializers import ConfigurationSerializer, CameraSerializer, LabelSerializer, UserSerializer, \
+    VideoRecordSerializer
+from .models import Configuration, Camera, Label, VideoRecord
 
 
 def query_from_request(request, cls_serializer=None) -> dict:
@@ -47,3 +48,4 @@ ConfigurationViewSet = create_viewset(Configuration, ConfigurationSerializer, Pe
 CameraViewSet = create_viewset(Camera, CameraSerializer, Permission)
 LabelViewSet = create_viewset(Label, LabelSerializer, Permission)
 UserViewSet = create_viewset(User, UserSerializer, Permission)
+VideoRecordSet = create_viewset(VideoRecord, VideoRecordSerializer, Permission)

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
-from rest_framework.serializers import HyperlinkedModelSerializer, HyperlinkedRelatedField
+from rest_framework.serializers import HyperlinkedModelSerializer
 
-from .models import Configuration, Camera, Label
+from .models import Configuration, Camera, Label, VideoRecord
 
 
 class UserSerializer(HyperlinkedModelSerializer):
@@ -25,4 +25,10 @@ class CameraSerializer(HyperlinkedModelSerializer):
 class LabelSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Label
+        fields = '__all__'
+
+
+class VideoRecordSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = VideoRecord
         fields = '__all__'
