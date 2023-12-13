@@ -6,7 +6,7 @@ def distortion_func(x, width):
     return 1 / 5100 * (x - width // 2) ** 2
 
 
-def warp_image(img, min_divisions=20):
+def warp_image(img, min_divisions=5):
     height, img_width = img.shape[:2]
 
     num_divisions = min(min_divisions, img_width)
