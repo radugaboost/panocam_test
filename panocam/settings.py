@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'panocam_app',
     'corsheaders',
     'rest_framework',
+    'django_extensions',
     'rest_framework.authtoken',
 ]
 
@@ -119,9 +120,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
+
+USE_L10N = True
 
 USE_TZ = True
 
