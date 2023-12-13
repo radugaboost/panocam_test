@@ -114,7 +114,7 @@ def upload_page(request):
     return render(request, 'load_model.html', {'models': models})
 
 
-UPLOAD_FOLDER = os.path.abspath('panocam_app/models')
+UPLOAD_FOLDER = os.path.abspath('panocam_app/storage/models')
 
 
 def change_model_status(request, model_id):
