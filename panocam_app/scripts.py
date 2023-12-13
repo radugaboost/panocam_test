@@ -1,11 +1,12 @@
+from django.utils import timezone
 from .models import Camera, DetectionModel
 import cv2
 from time import time, sleep
-from datetime import datetime
 from threading import Thread
 from queue import Queue
 from panocam_app.detection import Rknn_yolov5s
 from panocam_app.reformat_frame import warp_image
+from .recording import SaveVideo
 
 THREADED_CAMERAS = dict()
 
@@ -40,7 +41,7 @@ class ModelManager:
 
     @classmethod
     def process_models(cls, frame):
-        if not cls.models:
+        if not cls.models and not DetectionModel.objects.filter(active=True):
             cls.update_models()
 
         result_frame = frame
@@ -50,60 +51,57 @@ class ModelManager:
 
 
 class ThreadedCamera(object):
-    def __init__(self, src=0):
+    def __init__(self, camera_id=0):
         self.__frame = None
-        self.src = src
+        self.camera_id = camera_id
         self.areas = dict()
         self.queue = None
+        self.previous_day = timezone.now().day
         self.start_video()
+        self.record = None
 
-    def start_recording(self):
-        self.out = cv2.VideoWriter(
-            f'./panocam_app/static/videos/{datetime.now()}.mp4',
-            cv2.VideoWriter_fourcc(*"avc1"),
-            20.0,
-            (640, 480)
-        )
-        self.recording_thread = Thread(target=self.recording)
-        self.queue = Queue()
-        self.recording_thread.start()
-
-    def recording(self): # TODO
-        print('Starting detect recording')
-        prev_frame = None
-        while self.detect:
-            if not self.queue.empty():
-                frame = self.queue.get()
-                self.out.write(frame)
-        print('Recording finished')
+    def day_has_changed(self):
+        current_day = timezone.now().day
+        if current_day != self.previous_day:
+            self.previous_day = current_day
+            return True
+        return False
 
     def start_video(self):
-        self.capture = create_capture(self.src)
+        self.capture = create_capture(self.camera_id)
         if not self.capture:
-            if self.src in THREADED_CAMERAS.keys():
-                del THREADED_CAMERAS[self.src]
+            if self.camera_id in THREADED_CAMERAS.keys():
+                del THREADED_CAMERAS[self.camera_id]
             return False
         self.thread = Thread(target=self.update)
         self.thread.daemon = True
         self.stop = False
         self.thread.start()
+        self.queue = Queue()
+        self.record = SaveVideo(self.queue, self.camera_id)
+        Thread(target=self.record.start_recording).start()
 
     def update(self):
         while not self.stop:
             success, frame = self.capture.read()
             warped_frame = warp_image(frame)
             flipped_frame = (cv2.flip(warped_frame, 1))  # зеркалит кадр
+            # flipped_frame = (cv2.flip(frame, 1))
 
             if success:
                 self.__frame = ModelManager.process_models(flipped_frame)
 
                 if self.queue:
                     self.queue.put(self.__frame)
+            if self.day_has_changed():
+                self.restart()
 
     def show_frame(self):
         return self.__frame
 
     def restart(self):
+        if self.record:
+            self.record.stop_recording()
         self.stop = True
         self.capture.release()
         self.start_video()
