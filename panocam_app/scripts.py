@@ -98,7 +98,7 @@ class ThreadedCamera(object):
         return False
 
     def start_video(self) -> bool:
-        self.capture = create_capture(self.camera_id)
+        self.capture = create_capture(self.id)
 
         if not self.capture:
             return False
@@ -108,7 +108,7 @@ class ThreadedCamera(object):
         self.stop = False
         self.queue = Queue()
         self.thread.start()
-        self.record = SaveVideo(self.queue, self.camera_id)
+        self.record = SaveVideo(self.queue, self.id)
 
         Thread(target=self.record.start_recording).start()
 
