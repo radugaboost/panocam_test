@@ -9,6 +9,7 @@ from django.core.files.storage import FileSystemStorage
 from django.views.decorators import gzip
 from werkzeug.utils import secure_filename
 from panocam_app.models import DetectionModel
+from time import sleep
 # from rknn.api import RKNN
 
 from panocam_app.models import Camera
@@ -45,18 +46,23 @@ def add_area(request, camera_id: int):
         frame = camera.show_frame()
         points = json_data['points']
         height, width = json_data['shape']
-        relative_points = [
-            (point['x'] / width, point['y'] / height) 
-            for point in points
-        ]
         init_height, init_width = frame.shape[:2]
-        x_values = [int(point[0] * init_width) for point in relative_points]
-        y_values = [int(point[1] * init_height) for point in relative_points]
-        points = [(x, y) for x, y in zip(x_values, y_values)]
-        top, height = min(y_values), max(y_values)
-        left, width = min(x_values), max(x_values)
+        x_modifier, y_modifier = init_width / width, init_height / height
+
+        top, height, left, width = 0, 0, 0, 0
+        modified_points = list()
+        for point in points:
+            x, y = int(point['x'] * x_modifier), int(point['y'] * y_modifier)
+            modified_points.append((x, y))
+            if not top:
+                top, height = y, y
+                left, width = x, x
+                continue
+            top, height = min(top, y), max(height, y)
+            left, width = min(left, x), max(width, x)
+
         area_id = len(areas) + 1
-        areas[area_id] = [(top, left, width, height), points]
+        areas[area_id] = [(top, left, width, height), modified_points]
         return JsonResponse(data={'area_id': area_id}, status=201)
 
     return JsonResponse(data='Not found',status=404)
@@ -75,12 +81,12 @@ def generate(camera: cv2.VideoCapture, area: list):
             cv2.fillPoly(mask, [roi_corners], ignore_mask_color)
             masked_image = cv2.bitwise_and(frame, mask)
 
-            top = borders[0]
-            left = borders[1]
+            top, left = borders[0], borders[1]
             width = borders[2] - left
             height = borders[3] - top
 
             frame = masked_image[top:top + height, left:left + width]
+
         _, jpeg = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')

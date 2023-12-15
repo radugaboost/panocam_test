@@ -1,17 +1,18 @@
 import cv2
 import numpy as np
-# from rknnlite.api import RKNNLite
+from datetime import datetime
+from rknnlite.api import RKNNLite
+from typing import Optional
 
 
 class Rknn_yolov5s:
 
     def __init__(
-            self,
-            rknn_model: str,
-            output_frame_size: tuple = (1280, 720)
+        self,
+        rknn_model: str,
+        npu_id: int = 0
     ) -> None:
-        self.__rknn_model = Rknn_yolov5s.initRKNN(rknn_model)
-        self.__output_frame_size = output_frame_size
+        self.__rknn_model = Rknn_yolov5s.initRKNN(rknn_model, npu_id)
         self.__classes = (
             "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
             "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -24,10 +25,9 @@ class Rknn_yolov5s:
             "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock",
             "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
         )
-        self.__obj_thresh = 0.25
+        self.__obj_thresh = 0.65
         self.__nms_thresh = 0.45
         self.__image_size = (640, 640)
-        self.__object_image_size = (64, 64)
         self.__masks = [
             [0, 1, 2], [3, 4, 5], [6, 7, 8]
         ]
@@ -38,28 +38,35 @@ class Rknn_yolov5s:
         ]
 
     @staticmethod
-    def initRKNN(rknnModel: str):
+    def initRKNN(rknnModel: str, npu_id: int) -> RKNNLite:
         rknn_lite = RKNNLite()
         ret = rknn_lite.load_rknn(rknnModel)
+
         if ret != 0:
             print("Load RKNN rknnModel failed")
             exit(ret)
-        ret = rknn_lite.init_runtime()
+
+        if npu_id == 0:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
+        elif npu_id == 1:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
+        elif npu_id == 2:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
+        else:
+            ret = rknn_lite.init_runtime()
+
         if ret != 0:
             print("Init runtime environment failed")
             exit(ret)
+
         print(rknnModel, "\t\tdone")
         return rknn_lite
 
-    @property
-    def output_frame_size(self):
-        return self.__output_frame_size
-
-    @output_frame_size.setter
-    def output_frame_size(self, value: tuple):
-        self.__output_frame_size = value
-
-    def process(self, input, mask, anchors):
+    def process(
+        self, input: np.ndarray, mask: list, anchors: list
+    ) -> tuple[
+        Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
+    ]:
         anchors = [anchors[i] for i in mask]
         grid_h, grid_w = map(int, input.shape[0:2])
 
@@ -81,7 +88,14 @@ class Rknn_yolov5s:
 
         return np.concatenate((box_xy, box_wh), axis=-1), box_confidence, box_class_probs
 
-    def filter_boxes(self, boxes, box_confidences, box_class_probs):
+    def filter_boxes(
+        self,
+        boxes: np.ndarray,
+        box_confidences: np.ndarray,
+        box_class_probs: np.ndarray
+    ) -> tuple[
+        Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
+    ]:
         boxes = boxes.reshape(-1, 4)
         box_confidences = box_confidences.reshape(-1)
         box_class_probs = box_class_probs.reshape(-1, box_class_probs.shape[-1])
@@ -97,7 +111,7 @@ class Rknn_yolov5s:
 
         return boxes[_class_pos], classes[_class_pos], (class_max_score * box_confidences)[_class_pos]
 
-    def nms_boxes(self, boxes, scores):
+    def nms_boxes(self, boxes: np.ndarray, scores: np.ndarray) -> np.ndarray:
         x = boxes[:, 0]
         y = boxes[:, 1]
         w = boxes[:, 2] - boxes[:, 0]
@@ -126,8 +140,7 @@ class Rknn_yolov5s:
         return np.array(keep)
 
     @staticmethod
-    def xywh2xyxy(x):
-        # Convert [x, y, w, h] to [x1, y1, x2, y2]
+    def xywh2xyxy(x: np.ndarray) -> np.ndarray:
         y = np.copy(x)
         y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
         y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
@@ -135,7 +148,11 @@ class Rknn_yolov5s:
         y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
         return y
 
-    def post_process(self, input_data):
+    def post_process(
+        self, input_data: list[np.ndarray]
+    ) -> tuple[
+        Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
+    ]:
         boxes, classes, scores = [], [], []
         for input, mask in zip(input_data, self.__masks):
             b, c, s = self.process(input, mask, self.__anchors)
@@ -167,44 +184,35 @@ class Rknn_yolov5s:
 
         return np.concatenate(nboxes), np.concatenate(nclasses), np.concatenate(nscores)
 
-    def draw(self, frame, boxes, scores, classes):
-        frame_height = self.__image_size[0]
-        frame_width = self.__image_size[1]
-        combined_height = frame_height + self.__object_image_size[0]
-        combined_frame = np.zeros((combined_height, frame_width, 3), dtype=np.uint8)
-        resized_objects = []
+    def draw(
+        self,
+        frame: np.ndarray,
+        boxes: np.ndarray,
+        scores: np.ndarray,
+        classes: np.ndarray
+    ) -> np.ndarray:
+        width, height = frame.shape[:2]
+        x_modifier = width / self.__image_size[0]
+        y_modifier = height / self.__image_size[1]
 
-        clone_frame = frame.copy()
-        for box, _, _ in zip(boxes, scores, classes):
-            top, left, right, bottom = (abs(int(coord)) for coord in box)
-            object_image = clone_frame[left:bottom, top:right]
-            resized_object = cv2.resize(object_image, self.__object_image_size)
-            resized_objects.append(resized_object)
-            cv2.rectangle(frame, (top, left), (right, bottom), (255, 0, 0), 2)
+        for box in boxes:
+            top, left, right, bottom = (
+                abs(int(coord)) for coord in box
+            )
 
-        current_x = 0
-        init_frame_height = frame_height
-        for object_image in resized_objects:
-            object_width = object_image.shape[1]
-            if current_x + object_width > frame_width:
-                frame_height += object_image.shape[1]
-                prev_height = combined_height
-                combined_height += object_image.shape[1]
-                new_combined_frame = np.zeros((combined_height, frame_width, 3), dtype=np.uint8)
-                new_combined_frame[:prev_height, :frame_width] = combined_frame
-                combined_frame = new_combined_frame
-                current_x = 0
+            relative_top = int(top * y_modifier)
+            relative_left = int(left * x_modifier)
+            relative_right = int(right * y_modifier)
+            relative_bottom = int(bottom * x_modifier)
 
-            combined_frame[frame_height:combined_height, current_x:current_x + object_width] = object_image
-            current_x += object_width  # сдвигаем текущее положение
+            cv2.rectangle(frame, (relative_top, relative_left), (relative_right, relative_bottom), (255, 0, 0), 2)
 
-        combined_frame[:init_frame_height, :frame_width] = frame
-        return cv2.resize(combined_frame, self.__output_frame_size)
+        return frame
 
-    def detect(self, frame):
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = cv2.resize(frame, self.__image_size)
-        outputs = self.__rknn_model.inference(inputs=[frame])
+    def detect(self, frame: np.ndarray) -> np.ndarray:
+        model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        model_frame = cv2.resize(model_frame, self.__image_size, interpolation=cv2.INTER_AREA)
+        outputs = self.__rknn_model.inference(inputs=[model_frame])
 
         input0_data = outputs[0].reshape([3, -1] + list(outputs[0].shape[-2:]))
         input1_data = outputs[1].reshape([3, -1] + list(outputs[1].shape[-2:]))
@@ -217,8 +225,7 @@ class Rknn_yolov5s:
 
         boxes, classes, scores = self.post_process(input_data)
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         if boxes is not None:
-            return self.draw(frame, boxes, scores, classes)
+            frame = self.draw(frame, boxes, scores, classes)
 
-        return cv2.resize(frame, self.__output_frame_size)
+        return frame

@@ -8,18 +8,19 @@ from panocam_app.scripts import (
     THREADED_CAMERAS, ModelManager
 )
 
-def camera_restart(camera_id: int):
+
+def camera_restart(camera_id: int) -> None:
     thread = THREADED_CAMERAS[camera_id]
     thread.restart()
 
 
 @receiver(class_prepared)
-def process_start(sender, **kwargs):
+def process_start(sender, **kwargs) -> None:
     start_all_cameras()
 
 
 @receiver(post_save, sender=Camera)
-def camera_configuration_updated(sender, instance, **kwargs):
+def camera_configuration_updated(sender, instance, **kwargs) -> None:
     if instance.id in THREADED_CAMERAS.keys():
         camera_restart(instance.id)
     else:
@@ -27,12 +28,12 @@ def camera_configuration_updated(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Configuration)
-def camera_configuration_assigned(sender, instance, **kwargs):
+def camera_configuration_assigned(sender, instance, **kwargs) -> None:
     cameras = Camera.objects.filter(image_config=instance)
     for camera in cameras:
         camera_restart(camera.id)
 
 
 @receiver(post_save, sender=DetectionModel)
-def update_models_on_save(sender, instance, **kwargs):
+def update_models_on_save(sender, instance, **kwargs) -> None:
     ModelManager.update_models()
