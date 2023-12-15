@@ -11,7 +11,9 @@ from panocam_app.scripts import (
 
 def camera_restart(camera_id: int) -> None:
     thread = THREADED_CAMERAS[camera_id]
-    thread.restart()
+    started = thread.restart()
+    if not started:
+        del THREADED_CAMERAS[camera_id]
 
 
 @receiver(class_prepared)
@@ -21,10 +23,12 @@ def process_start(sender, **kwargs) -> None:
 
 @receiver(post_save, sender=Camera)
 def camera_configuration_updated(sender, instance, **kwargs) -> None:
-    if instance.id in THREADED_CAMERAS.keys():
-        camera_restart(instance.id)
+    cam_id = instance.id
+    camera = THREADED_CAMERAS.get(cam_id)
+    if camera:
+        camera_restart(cam_id)
     else:
-        start_camera(instance.id)
+        start_camera(cam_id)
 
 
 @receiver(post_save, sender=Configuration)

@@ -64,7 +64,7 @@ class ModelPoolManager:
 
 
 class ModelManager:
-    models = []
+    models: list = []
 
     @classmethod
     def update_models(cls) -> None:
@@ -85,7 +85,7 @@ class ModelManager:
 class ThreadedCamera(object):
     def __init__(self, camera_id: int = 0) -> None:
         self.__frame = None
-        self.camera_id = camera_id
+        self.id = camera_id
         self.areas = dict()
         self.queue = Queue()
         self.previous_day = timezone.now().day
@@ -101,13 +101,12 @@ class ThreadedCamera(object):
         self.capture = create_capture(self.camera_id)
 
         if not self.capture:
-            if self.camera_id in THREADED_CAMERAS.keys():
-                del THREADED_CAMERAS[self.camera_id]
             return False
 
         self.thread = Thread(target=self.update)
         self.thread.daemon = True
         self.stop = False
+        self.queue = Queue()
         self.thread.start()
         self.record = SaveVideo(self.queue, self.camera_id)
 
@@ -146,7 +145,7 @@ class ThreadedCamera(object):
 
         self.stop = True
         self.capture.release()
-        self.start_video()
+        return self.start_video()
 
 
 def start_camera(camera_id: int) -> None:
