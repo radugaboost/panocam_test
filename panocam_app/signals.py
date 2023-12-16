@@ -5,8 +5,9 @@ from panocam_app.models import (
 )
 from panocam_app.scripts import (
     start_camera, start_all_cameras,
-    THREADED_CAMERAS, ModelManager
+    THREADED_CAMERAS
 )
+from panocam_app.detection.utils.model_manager import ModelManager
 
 
 def camera_restart(camera_id: int) -> None:
@@ -16,9 +17,9 @@ def camera_restart(camera_id: int) -> None:
         del THREADED_CAMERAS[camera_id]
 
 
-@receiver(class_prepared)
-def process_start(sender, **kwargs) -> None:
-    start_all_cameras()
+# @receiver(class_prepared)
+# def process_start(sender, **kwargs) -> None:
+#     start_all_cameras()
 
 
 @receiver(post_save, sender=Camera)

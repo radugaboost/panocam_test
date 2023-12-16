@@ -1,7 +1,6 @@
 from threading import Thread
-
-import cv2
 from django.utils import timezone
+import cv2
 
 from panocam_app.models import Camera, VideoRecord
 

@@ -1,6 +1,7 @@
 import shutil
 import cv2
 from json import loads
+from django.http import HttpRequest
 import numpy as np
 
 from django.shortcuts import render
@@ -9,7 +10,7 @@ from django.core.files.storage import FileSystemStorage
 from django.views.decorators import gzip
 from werkzeug.utils import secure_filename
 from panocam_app.models import DetectionModel
-from time import sleep
+from panocam_app.streaming.camera import ThreadedCamera
 # from rknn.api import RKNN
 
 from panocam_app.models import Camera
@@ -17,7 +18,7 @@ from panocam_app.scripts import THREADED_CAMERAS
 import os
 
 
-def video_list(request):
+def video_list(request: HttpRequest) -> render:
     video_dir = './panocam_app/static/videos'
     video_files = os.listdir(video_dir)
     video_list = []
@@ -34,10 +35,10 @@ def video_list(request):
     return render(request, 'video.html', context)
 
 
-def get_available_cameras():
+def get_available_cameras() -> list:
     return Camera.objects.all()
 
-def add_area(request, camera_id: int):
+def add_area(request: HttpRequest, camera_id: int) -> JsonResponse:
     camera = THREADED_CAMERAS.get(camera_id)
     if camera:
         areas = camera.areas
@@ -67,7 +68,7 @@ def add_area(request, camera_id: int):
 
     return JsonResponse(data='Not found',status=404)
 
-def generate(camera: cv2.VideoCapture, area: list):
+def generate(camera: ThreadedCamera, area: list):
     while True:
         frame = camera.show_frame()
         if area:
@@ -92,11 +93,13 @@ def generate(camera: cv2.VideoCapture, area: list):
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
 @gzip.gzip_page
-def camera(request, camera_id: int, area_id: int = None):
+def camera(
+    request: HttpRequest, camera_id: int, area_id: int = None
+) -> StreamingHttpResponse or HttpResponseNotFound:
     camera = THREADED_CAMERAS.get(camera_id)
-    area = camera.areas.get(area_id)
 
     if camera:
+        area = camera.areas.get(area_id)
         return StreamingHttpResponse(
             generate(camera, area),
             content_type='multipart/x-mixed-replace; boundary=frame'
@@ -104,18 +107,20 @@ def camera(request, camera_id: int, area_id: int = None):
     return HttpResponseNotFound()
 
 
-def check_camera(request, camera_id: int):
+def check_camera(
+    request: HttpRequest, camera_id: int
+) -> HttpResponse or HttpResponseNotFound:
     if camera_id in THREADED_CAMERAS.keys():
         return HttpResponse()
     return HttpResponseNotFound()
 
 
 @gzip.gzip_page
-def camera_stream(request):
+def camera_stream(request: HttpRequest) -> render:
     return render(request, 'camera.html', {'cameras': get_available_cameras()})
 
 
-def upload_page(request):
+def upload_page(request: HttpRequest) -> render:
     models = DetectionModel.objects.all()
     return render(request, 'load_model.html', {'models': models})
 
@@ -123,9 +128,8 @@ def upload_page(request):
 UPLOAD_FOLDER = os.path.abspath('panocam_app/storage/models')
 
 
-def change_model_status(request, model_id):
+def change_model_status(request: HttpRequest, model_id: int) -> HttpResponse:
     model = DetectionModel.objects.filter(id=model_id).first()
-    print(model)
     if model is not None:
         model.active = not model.active
         model.save()
@@ -134,7 +138,7 @@ def change_model_status(request, model_id):
         return HttpResponse({'message': 'Model not found'}, status=404)
 
 
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
     return filename.split('.')[-1] in ['tflite', 'onnx']
 
 
@@ -177,7 +181,7 @@ def save_model_file(model_path, image_path, description, model_name=None):
     return HttpResponse('File uploaded and processed successfully')
 
 
-def upload_file(request):
+def upload_file(request: HttpRequest):
     if request.method == 'POST':
         model_file = request.FILES.get('file')
         image_file = request.FILES.get('image')
@@ -200,9 +204,8 @@ def upload_file(request):
     return HttpResponse('Method is not allowed')
 
 
-def delete_model(request, model_id):
+def delete_model(request: HttpRequest, model_id: int) -> HttpResponse:
     model = DetectionModel.objects.filter(id=model_id).first()
-    print(request.method)
     if model:
         model_dir = os.path.dirname(model.file_path)
         shutil.rmtree(model_dir, ignore_errors=True)

@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15.1
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  django:
+    build: .
+    env_file: .env
+    command: python manage.py runserver ${DJANGO_HOST}:${DJANGO_PORT}
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+    devices:
+      - /dev/video0:/dev/video0
+    volumes:
+      - ./:/panocam
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - ${DJANGO_PORT}:${DJANGO_PORT}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

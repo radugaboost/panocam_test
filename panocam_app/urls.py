@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework import routers
-from . import views, api_models
+from . import views
+from panocam_app.api import api_models
 
 router = routers.DefaultRouter()
 router.register(r'User', api_models.UserViewSet)

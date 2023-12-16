@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from datetime import datetime
-from rknnlite.api import RKNNLite
+# from rknnlite.api import RKNNLite
 from typing import Optional
 
 
@@ -37,30 +36,30 @@ class Rknn_yolov5s:
             [116, 90], [156, 198], [373, 326]
         ]
 
-    @staticmethod
-    def initRKNN(rknnModel: str, npu_id: int) -> RKNNLite:
-        rknn_lite = RKNNLite()
-        ret = rknn_lite.load_rknn(rknnModel)
+    # @staticmethod
+    # def initRKNN(rknnModel: str, npu_id: int) -> RKNNLite:
+    #     rknn_lite = RKNNLite()
+    #     ret = rknn_lite.load_rknn(rknnModel)
 
-        if ret != 0:
-            print("Load RKNN rknnModel failed")
-            exit(ret)
+    #     if ret != 0:
+    #         print("Load RKNN rknnModel failed")
+    #         exit(ret)
 
-        if npu_id == 0:
-            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
-        elif npu_id == 1:
-            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
-        elif npu_id == 2:
-            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
-        else:
-            ret = rknn_lite.init_runtime()
+    #     if npu_id == 0:
+    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
+    #     elif npu_id == 1:
+    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
+    #     elif npu_id == 2:
+    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
+    #     else:
+    #         ret = rknn_lite.init_runtime()
 
-        if ret != 0:
-            print("Init runtime environment failed")
-            exit(ret)
+    #     if ret != 0:
+    #         print("Init runtime environment failed")
+    #         exit(ret)
 
-        print(rknnModel, "\t\tdone")
-        return rknn_lite
+    #     print(rknnModel, "\t\tdone")
+    #     return rknn_lite
 
     def process(
         self, input: np.ndarray, mask: list, anchors: list
