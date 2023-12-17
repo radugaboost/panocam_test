@@ -1,10 +1,10 @@
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
-from panocam_app.serializers import (
+from panocam_app.api.serializers import (
     ConfigurationSerializer, CameraSerializer, LabelSerializer,
     UserSerializer, VideoRecordSerializer
 )
-from panocam_app.models import (
+from panocam_app.db.models import (
     Configuration, Camera,
     Label, VideoRecord
 )

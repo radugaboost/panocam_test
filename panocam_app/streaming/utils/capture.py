@@ -1,4 +1,4 @@
-from panocam_app.models import Camera
+from panocam_app.db.models import Camera
 from typing import Optional
 from time import time, sleep
 import cv2

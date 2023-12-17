@@ -2,7 +2,7 @@ from threading import Thread
 from django.utils import timezone
 import cv2
 
-from panocam_app.models import Camera, VideoRecord
+from panocam_app.db.models import Camera, VideoRecord
 
 SAVING_PATH = './panocam_app/storage/videos/{0}.avi'
 

@@ -1,11 +1,8 @@
-from .models import Camera
+from panocam_app.db.models import Camera
 from panocam_app.streaming.camera import ThreadedCamera
 
+
 THREADED_CAMERAS = dict()
-
-
-def get_available_cameras() -> list:
-    return Camera.objects.all()
 
 
 def start_camera(camera_id: int) -> None:
@@ -17,6 +14,6 @@ def start_camera(camera_id: int) -> None:
 
 def start_all_cameras() -> None:
     cameras = Camera.objects.all()
-    for item in cameras:
-        if item.id not in THREADED_CAMERAS.keys():
-            start_camera(item.id)
+    for camera in cameras:
+        if camera.id not in THREADED_CAMERAS.keys():
+            start_camera(camera.id)

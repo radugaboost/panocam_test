@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save, class_prepared
 from django.dispatch import receiver
-from panocam_app.models import (
+from panocam_app.db.models import (
     Camera, Configuration, DetectionModel
 )
 from panocam_app.scripts import (

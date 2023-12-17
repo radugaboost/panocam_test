@@ -1,4 +1,4 @@
-from panocam_app.models import DetectionModel
+from panocam_app.db.models import DetectionModel
 from typing import Optional
 import numpy as np
 from queue import Queue

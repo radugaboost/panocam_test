@@ -1,11 +1,10 @@
-from panocam_app.streaming.utils.capture import create_capture
-from panocam_app.models import DetectionModel
+from .utils.capture import create_capture
 from threading import Thread
 import numpy as np
 from queue import Queue
-from panocam_app.image_processing.reformat_frame import warp_image
+from panocam_app.image_processing.reformat.warp import warp_image
 from panocam_app.recording.recording import SaveVideo
-from panocam_app.streaming.utils.check_day import day_has_changed
+from .utils.check_day import day_has_changed
 from django.utils import timezone
 from panocam_app.detection.utils.pool_manager import ModelPoolManager
 
@@ -68,3 +67,25 @@ class ThreadedCamera(object):
         self.stop = True
         self.capture.release()
         return self.start_video()
+
+    def add_area(self, points: list, shape: list) -> int:
+        height, width = shape
+        init_height, init_width = self.__frame.shape[:2]
+        x_modifier, y_modifier = init_width / width, init_height / height
+
+        top, height, left, width = 0, 0, 0, 0
+        modified_points = list()
+        for point in points:
+            x, y = int(point['x'] * x_modifier), int(point['y'] * y_modifier)
+            modified_points.append((x, y))
+            if not top:
+                top, height = y, y
+                left, width = x, x
+                continue
+
+            top, height = min(top, y), max(height, y)
+            left, width = min(left, x), max(width, x)
+
+        area_id = len(self.areas) + 1
+        self.areas[area_id] = [(top, left, width, height), modified_points]
+        return area_id

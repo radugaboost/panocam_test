@@ -1,4 +1,4 @@
-from panocam_app.models import DetectionModel
+from panocam_app.db.models import DetectionModel
 import numpy as np
 from panocam_app.detection.detection import Rknn_yolov5s
 
