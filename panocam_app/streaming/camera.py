@@ -3,7 +3,7 @@ from threading import Thread
 import numpy as np
 from queue import Queue
 from panocam_app.image_processing.reformat.warp import warp_image
-from panocam_app.recording.recording import SaveVideo
+from panocam_app.recording.utils.recording import SaveVideo
 from .utils.check_day import day_has_changed
 from django.utils import timezone
 from panocam_app.detection.utils.pool_manager import ModelPoolManager
