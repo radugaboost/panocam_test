@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-# from rknnlite.api import RKNNLite
+from rknnlite.api import RKNNLite
 from typing import Optional
 
 
@@ -36,30 +36,30 @@ class Rknn_yolov5s:
             [116, 90], [156, 198], [373, 326]
         ]
 
-    # @staticmethod
-    # def initRKNN(rknnModel: str, npu_id: int) -> RKNNLite:
-    #     rknn_lite = RKNNLite()
-    #     ret = rknn_lite.load_rknn(rknnModel)
+    @staticmethod
+    def initRKNN(rknnModel: str, npu_id: int) -> RKNNLite:
+        rknn_lite = RKNNLite()
+        ret = rknn_lite.load_rknn(rknnModel)
 
-    #     if ret != 0:
-    #         print("Load RKNN rknnModel failed")
-    #         exit(ret)
+        if ret != 0:
+            print("Load RKNN rknnModel failed")
+            exit(ret)
 
-    #     if npu_id == 0:
-    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
-    #     elif npu_id == 1:
-    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
-    #     elif npu_id == 2:
-    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
-    #     else:
-    #         ret = rknn_lite.init_runtime()
+        if npu_id == 0:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
+        elif npu_id == 1:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
+        elif npu_id == 2:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
+        else:
+            ret = rknn_lite.init_runtime()
 
-    #     if ret != 0:
-    #         print("Init runtime environment failed")
-    #         exit(ret)
+        if ret != 0:
+            print("Init runtime environment failed")
+            exit(ret)
 
-    #     print(rknnModel, "\t\tdone")
-    #     return rknn_lite
+        print(rknnModel, "done")
+        return rknn_lite
 
     def process(
         self, input: np.ndarray, mask: list, anchors: list
@@ -207,6 +207,34 @@ class Rknn_yolov5s:
             cv2.rectangle(frame, (relative_top, relative_left), (relative_right, relative_bottom), (255, 0, 0), 2)
 
         return frame
+    
+    def create_frame(
+        self,
+        frame: np.ndarray,
+        boxes: np.ndarray,
+        scores: np.ndarray,
+        classes: np.ndarray
+    ) -> np.ndarray:
+        width, height = frame.shape[:2]
+        empty_frame = np.zeros((width, height, 3), dtype=np.uint8)
+        x_modifier = width / self.__image_size[0]
+        y_modifier = height / self.__image_size[1]
+        coords = []
+
+        for box in boxes:
+            top, left, right, bottom = (
+                abs(int(coord)) for coord in box
+            )
+
+            relative_top = int(top * y_modifier)
+            relative_left = int(left * x_modifier)
+            relative_right = int(right * y_modifier)
+            relative_bottom = int(bottom * x_modifier)
+
+            cropped_region = frame[relative_top:relative_bottom, relative_left:relative_right]
+            empty_frame[relative_top:relative_bottom, relative_left:relative_right] = cropped_region
+
+        return empty_frame
 
     def detect(self, frame: np.ndarray) -> np.ndarray:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -225,6 +253,6 @@ class Rknn_yolov5s:
         boxes, classes, scores = self.post_process(input_data)
 
         if boxes is not None:
-            frame = self.draw(frame, boxes, scores, classes)
+            frame = self.create_frame(frame, boxes, scores, classes)
 
         return frame

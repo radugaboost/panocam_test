@@ -14,16 +14,19 @@ services:
       retries: 30
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
   django:
     build: .
     env_file: .env
     command: python manage.py runserver ${DJANGO_HOST}:${DJANGO_PORT}
     environment:
       - POSTGRES_HOST=host.docker.internal
-    devices:
-      - /dev/video0:/dev/video0
+    privileged: true
     volumes:
       - ./:/panocam
+      - /dev/dri/renderD129:/dev/dri/renderD129
+      - /proc/device-tree/compatible:/proc/device-tree/compatible
+      - /usr/lib/librknnrt.so:/usr/lib/librknnrt.so
     depends_on:
       postgres:
         condition: service_healthy

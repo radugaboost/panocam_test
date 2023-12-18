@@ -7,6 +7,7 @@ from panocam_app.recording.recording import SaveVideo
 from .utils.check_day import day_has_changed
 from django.utils import timezone
 from panocam_app.detection.utils.pool_manager import ModelPoolManager
+from panocam_app.db.models import DetectionModel
 
 
 class ThreadedCamera(object):
@@ -35,21 +36,20 @@ class ThreadedCamera(object):
         return True
 
     def update(self) -> None:
-        # pool = ModelPoolManager(TPEs=3, model=DetectionModel.objects.get(id=1))
+        pool = ModelPoolManager(TPEs=3, model=DetectionModel.objects.all()[0])
         while not self.stop:
             success, frame = self.capture.read()
 
             if success:
                 warped_frame = warp_image(frame)
-                self.__frame = warped_frame
 
-                # pool.put(warped_frame)
-                # processed_frame = pool.get()
+                pool.put(warped_frame)
+                processed_frame = pool.get()
 
-                # if frame is None:
-                #     self.__frame = warped_frame
-                # else:
-                #     self.__frame = processed_frame
+                if frame is None:
+                    self.__frame = warped_frame
+                else:
+                    self.__frame = processed_frame
 
                 if self.queue:
                     self.queue.put(self.__frame)

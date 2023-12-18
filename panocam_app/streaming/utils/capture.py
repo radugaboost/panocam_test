@@ -7,7 +7,7 @@ import cv2
 def create_capture(camera_id: int, timeout: int = 1) -> Optional[cv2.VideoCapture]:
     camera = Camera.objects.get(id=camera_id)
     start_time = time()
-    capture = cv2.VideoCapture(int(camera.ip))
+    capture = cv2.VideoCapture(camera.ip, cv2.CAP_FFMPEG)
 
     while not capture.isOpened():
         elapsed_time = time() - start_time
@@ -16,6 +16,6 @@ def create_capture(camera_id: int, timeout: int = 1) -> Optional[cv2.VideoCaptur
             return None
 
         sleep(timeout // 2)
-        capture = cv2.VideoCapture(int(camera.ip))
+        capture = cv2.VideoCapture(camera.ip, cv2.CAP_FFMPEG)
 
     return capture
