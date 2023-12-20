@@ -1,5 +1,5 @@
 from panocam_app.db.models import Camera
-from panocam_app.streaming.camera import ThreadedCamera
+from panocam_app.streaming import ThreadedCamera
 
 
 THREADED_CAMERAS = dict()

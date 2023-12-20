@@ -41,15 +41,16 @@ class ThreadedCamera(object):
             success, frame = self.capture.read()
 
             if success:
+                self.__frame = frame
+
                 warped_frame = warp_image(frame)
+                self.__warped_frame = warped_frame
 
-                pool.put(warped_frame)
-                processed_frame = pool.get()
+                pool.put(frame)
+                detection_frame = pool.get()
 
-                if frame is None:
-                    self.__frame = warped_frame
-                else:
-                    self.__frame = processed_frame
+                if detection_frame is not None:
+                    self.__detection_frame = detection_frame
 
                 if self.queue:
                     self.queue.put(self.__frame)
@@ -57,7 +58,13 @@ class ThreadedCamera(object):
             if day_has_changed(self.previous_day):
                 self.restart()
 
-    def show_frame(self) -> np.ndarray:
+    def show_frame(self, frame_type: str) -> np.ndarray:
+        if frame_type == 'warped':
+            return self.__warped_frame
+
+        elif frame_type == 'detection':
+            return self.__detection_frame
+ 
         return self.__frame
 
     def restart(self) -> None:

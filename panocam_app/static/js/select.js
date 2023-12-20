@@ -162,7 +162,7 @@ class ContourArea {
     const csrfTokenInput = document.getElementsByName('csrfmiddlewaretoken')[0];
     const csrfToken = csrfTokenInput.value;
 
-    fetch("http://localhost:8000/add_area/1/", {
+    fetch("http://192.168.1.91:8000/add_area/1/", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -29,6 +29,4 @@ def warp_image(img: np.ndarray, min_divisions: int = 5) -> np.ndarray:
         warped_part = cv2.warpPerspective(part, matrix, (width, height))
         warped_parts.append(warped_part)
 
-    result = np.hstack(warped_parts)
-
-    return result
+    return np.hstack(warped_parts)

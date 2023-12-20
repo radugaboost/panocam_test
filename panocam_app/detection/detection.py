@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
 from typing import Optional
+from panocam_app.image_processing.concat import concat_images
 
 
 class Rknn_yolov5s:
@@ -215,26 +216,25 @@ class Rknn_yolov5s:
         scores: np.ndarray,
         classes: np.ndarray
     ) -> np.ndarray:
-        width, height = frame.shape[:2]
-        empty_frame = np.zeros((width, height, 3), dtype=np.uint8)
+        height, width = frame.shape[:2]
         x_modifier = width / self.__image_size[0]
         y_modifier = height / self.__image_size[1]
-        coords = []
+        images = list()
 
         for box in boxes:
             top, left, right, bottom = (
                 abs(int(coord)) for coord in box
             )
 
-            relative_top = int(top * y_modifier)
-            relative_left = int(left * x_modifier)
-            relative_right = int(right * y_modifier)
-            relative_bottom = int(bottom * x_modifier)
+            relative_top = int(top * x_modifier)
+            relative_left = int(left * y_modifier)
+            relative_right = int(right * x_modifier)
+            relative_bottom = int(bottom * y_modifier)
 
-            cropped_region = frame[relative_top:relative_bottom, relative_left:relative_right]
-            empty_frame[relative_top:relative_bottom, relative_left:relative_right] = cropped_region
+            image = frame[relative_left:relative_bottom, relative_top:relative_right]
+            images.append({'image': image})
 
-        return empty_frame
+        return concat_images(images)
 
     def detect(self, frame: np.ndarray) -> np.ndarray:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -253,6 +253,6 @@ class Rknn_yolov5s:
         boxes, classes, scores = self.post_process(input_data)
 
         if boxes is not None:
-            frame = self.create_frame(frame, boxes, scores, classes)
+            return self.create_frame(frame, boxes, scores, classes)
 
-        return frame
+        return None
