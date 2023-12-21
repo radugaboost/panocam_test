@@ -1,27 +1,27 @@
 import os
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse, FileResponse, HttpRequest
 from django.shortcuts import render, redirect
 
 from panocam_app.db.models import VideoRecord
 
 
-def video_list(request):
+def video_list(request: HttpRequest):
     return render(request, 'video_list.html')
 
 
-def video_page(request, video_id):
+def video_page(request: HttpRequest, video_id: int):
     if not VideoRecord.objects.filter(id=video_id):
         return redirect('/videos')
     return render(request, 'video_page.html')
 
 
-def get_video_records(request):
+def get_video_records(request: HttpRequest):
     records = [{'id': record.id, 'name': record.name} for record in VideoRecord.objects.all()[::-1]]
     return JsonResponse(records, status=200, safe=False)
 
 
-def get_video_data(request, video_id):
+def get_video_data(request: HttpRequest, video_id: int):
     record = VideoRecord.objects.filter(id=video_id).first()
     if not record:
         return JsonResponse('Not found', safe=404)
@@ -34,7 +34,7 @@ def get_video_data(request, video_id):
     return JsonResponse(response, status=200, safe=False)
 
 
-def get_video_file(request, video_id):
+def get_video_file(request: HttpRequest, video_id: int):
     record = VideoRecord.objects.filter(id=video_id).first()
     if not record:
         return JsonResponse({'message', "Not found"}, status=404)
@@ -50,7 +50,7 @@ def get_video_file(request, video_id):
         return JsonResponse({'message', "Not found"}, status=404)
 
 
-def drop_video_record(request, video_id):
+def drop_video_record(request: HttpRequest, video_id: int):
     video_record = VideoRecord.objects.filter(id=video_id)
     if not video_record:
         return JsonResponse({'message', "Not found"}, status=404)
@@ -64,7 +64,7 @@ def drop_video_record(request, video_id):
     return JsonResponse({'message': 'No content'}, status=204, safe=False)
 
 
-def drop_video_records(request):
+def drop_video_records(request: HttpRequest):
     video_record = VideoRecord.objects.all()
     paths = [record.saving_path for record in video_record]
     for record in video_record:

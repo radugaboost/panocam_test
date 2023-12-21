@@ -1,7 +1,8 @@
 import numpy as np
-import cv2
+from cv2 import fillPoly, bitwise_and
 
-def select_area(area: list, frame: np.ndarray):
+
+def select_area(area: list, frame: np.ndarray) -> np.ndarray:
     borders = area[0]
     points = area[1]
 
@@ -9,8 +10,8 @@ def select_area(area: list, frame: np.ndarray):
     roi_corners = np.array(points, dtype=np.int32)
     channel_count = frame.shape[2]
     ignore_mask_color = (255,) * channel_count
-    cv2.fillPoly(mask, [roi_corners], ignore_mask_color)
-    masked_image = cv2.bitwise_and(frame, mask)
+    fillPoly(mask, [roi_corners], ignore_mask_color)
+    masked_image = bitwise_and(frame, mask)
 
     top, left = borders[0], borders[1]
     width = borders[2] - left

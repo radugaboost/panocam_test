@@ -1,6 +1,6 @@
 from .utils.capture import create_capture
 from threading import Thread
-import numpy as np
+from numpy import ndarray
 from queue import Queue
 from panocam_app.image_processing.reformat.warp import warp_image
 from panocam_app.recording.utils.recording import SaveVideo
@@ -43,8 +43,7 @@ class ThreadedCamera(object):
             if success:
                 self.__frame = frame
 
-                warped_frame = warp_image(frame)
-                self.__warped_frame = warped_frame
+                self.__warped_frame = warp_image(frame)
 
                 pool.put(frame)
                 detection_frame = pool.get()
@@ -58,7 +57,7 @@ class ThreadedCamera(object):
             if day_has_changed(self.previous_day):
                 self.restart()
 
-    def show_frame(self, frame_type: str) -> np.ndarray:
+    def show_frame(self, frame_type: str) -> ndarray:
         if frame_type == 'warped':
             return self.__warped_frame
 
