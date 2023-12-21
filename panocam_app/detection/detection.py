@@ -3,6 +3,7 @@ import numpy as np
 from rknnlite.api import RKNNLite
 from typing import Optional
 from panocam_app.image_processing.concat import concat_images
+from panocam_app.image_processing.centering import insert_into_center
 
 
 class Rknn_yolov5s:
@@ -187,9 +188,7 @@ class Rknn_yolov5s:
     def draw(
         self,
         frame: np.ndarray,
-        boxes: np.ndarray,
-        scores: np.ndarray,
-        classes: np.ndarray
+        boxes: np.ndarray
     ) -> np.ndarray:
         width, height = frame.shape[:2]
         x_modifier = width / self.__image_size[0]
@@ -212,9 +211,7 @@ class Rknn_yolov5s:
     def create_frame(
         self,
         frame: np.ndarray,
-        boxes: np.ndarray,
-        scores: np.ndarray,
-        classes: np.ndarray
+        boxes: np.ndarray
     ) -> np.ndarray:
         height, width = frame.shape[:2]
         x_modifier = width / self.__image_size[0]
@@ -234,7 +231,8 @@ class Rknn_yolov5s:
             image = frame[relative_left:relative_bottom, relative_top:relative_right]
             images.append({'image': image})
 
-        return concat_images(images)
+        objects_frame = concat_images(images)
+        return insert_into_center(frame, objects_frame)
 
     def detect(self, frame: np.ndarray) -> np.ndarray:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -250,9 +248,9 @@ class Rknn_yolov5s:
         input_data.append(np.transpose(input1_data, (2, 3, 0, 1)))
         input_data.append(np.transpose(input2_data, (2, 3, 0, 1)))
 
-        boxes, classes, scores = self.post_process(input_data)
+        boxes, _, _ = self.post_process(input_data)
 
         if boxes is not None:
-            return self.create_frame(frame, boxes, scores, classes)
+            return self.create_frame(frame, boxes)
 
         return None
