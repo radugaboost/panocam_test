@@ -214,6 +214,7 @@ class Rknn_yolov5s:
         boxes: np.ndarray
     ) -> np.ndarray:
         height, width = frame.shape[:2]
+        empty_frame = np.zeros((width, height, 3), dtype=np.uint8)
         x_modifier = width / self.__image_size[0]
         y_modifier = height / self.__image_size[1]
         images = list()
@@ -232,7 +233,7 @@ class Rknn_yolov5s:
             images.append({'image': image})
 
         objects_frame = concat_images(images)
-        return insert_into_center(frame, objects_frame)
+        return insert_into_center(empty_frame, objects_frame)
 
     def detect(self, frame: np.ndarray) -> np.ndarray:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

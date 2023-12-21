@@ -52,8 +52,8 @@ def concat_resize(
         interpolation: int = INTER_CUBIC
     ) -> ndarray:
     h_resized_images = [
-        hconcat_resize(images, interpolation=INTER_CUBIC)  
+        hconcat_resize(images, interpolation=interpolation)  
         for images in content
     ]
 
-    return vconcat_resize(h_resized_images, interpolation=INTER_CUBIC)
+    return vconcat_resize(h_resized_images, interpolation=interpolation)
