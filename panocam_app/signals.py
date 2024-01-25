@@ -2,13 +2,12 @@ from django.db.models.signals import post_save
 
 from django.dispatch import receiver
 from panocam_app.db.models import (
-    Camera, Configuration, DetectionModel
+    Camera, Configuration
 )
 from panocam_app.scripts import (
     start_camera, start_all_cameras,
     THREADED_CAMERAS
 )
-from panocam_app.detection.utils.model_manager import ModelManager
 from django.db.backends.signals import connection_created
 
 
@@ -42,8 +41,3 @@ def camera_configuration_assigned(sender, instance, **kwargs) -> None:
     cameras = Camera.objects.filter(image_config=instance)
     for camera in cameras:
         camera_restart(camera.id)
-
-
-# @receiver(post_save, sender=DetectionModel)
-# def update_models_on_save(sender, instance, **kwargs) -> None:
-#     ModelManager.update_models()

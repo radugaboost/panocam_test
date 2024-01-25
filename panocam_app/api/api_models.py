@@ -2,12 +2,13 @@ from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from panocam_app.api.serializers import (
     ConfigurationSerializer, CameraSerializer, LabelSerializer,
-    UserSerializer, VideoRecordSerializer
+    UserSerializer, VideoRecordSerializer, DetectionAreaSerializer
 )
 from panocam_app.db.models import (
     Configuration, Camera,
-    Label, VideoRecord
+    Label, VideoRecord, DetectionArea
 )
+
 
 def query_from_request(request, cls_serializer=None) -> dict:
     if cls_serializer:
@@ -53,3 +54,4 @@ CameraViewSet = create_viewset(Camera, CameraSerializer, Permission)
 LabelViewSet = create_viewset(Label, LabelSerializer, Permission)
 UserViewSet = create_viewset(User, UserSerializer, Permission)
 VideoRecordSet = create_viewset(VideoRecord, VideoRecordSerializer, Permission)
+DetectionAreaSet = create_viewset(DetectionArea, DetectionAreaSerializer, Permission)

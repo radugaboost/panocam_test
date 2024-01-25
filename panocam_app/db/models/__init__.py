@@ -3,3 +3,4 @@ from .config import Configuration
 from .label import Label
 from .model import DetectionModel
 from .record import VideoRecord
+from .detection_area import DetectionArea
