@@ -1,0 +1,76 @@
+.test {
+  position: absolute;
+  top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #337AB7; /* Green background color */
+  color: white; /* White text color */
+  border-radius: 12px; /* Rounded corners */
+  cursor: pointer;
+  border: 1px solid #337AB7; /* Green border */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Add a smooth transition */
+
+  /* Hover effect */
+  &:hover {
+      background-color: white;
+      color: #337AB7;
+  }
+}
+.updateLabel {
+    position: absolute;
+    top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #337AB7; /* Green background color */
+    color: white; /* White text color */
+    border-radius: 12px; /* Rounded corners */
+    cursor: pointer;
+    border: 1px solid #337AB7; /* Green border */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Add a smooth transition */
+
+    /* Hover effect */
+    &:hover {
+        background-color: white;
+        color: #337AB7;
+    }
+}
+
+.popup {
+    position: fixed;
+    right: -100%;
+    transform: translate(0, -50%);
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    transition: right 0.3s ease-in-out;
+}
+
+.popup.active {
+    right: 0;
+}
+
+.popup-content {
+    max-width: 400px;
+}
+
+.update-button {
+    margin-top: 10px;
+    cursor: pointer;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+}
+
+    .slick-slider {
+    width: 100%;
+}
+
+.slick-slider {
+    width: 100%;
+}
+
+.slick-slide {
+    padding: 0 5px;
+}

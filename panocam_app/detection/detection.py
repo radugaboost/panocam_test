@@ -1,7 +1,10 @@
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
-from typing import Optional
+from typing import Optional, Tuple
+
+from numpy import ndarray
+
 from panocam_app.image_processing.concat import concat_images
 from panocam_app.image_processing.centering import insert_into_center
 
@@ -207,7 +210,7 @@ class Rknn_yolov5s:
             cv2.rectangle(frame, (relative_top, relative_left), (relative_right, relative_bottom), (255, 0, 0), 2)
 
         return frame
-    
+
     def create_frame(
         self,
         frame: np.ndarray,
@@ -235,7 +238,7 @@ class Rknn_yolov5s:
         objects_frame = concat_images(images)
         return insert_into_center(empty_frame, objects_frame)
 
-    def detect(self, frame: np.ndarray) -> np.ndarray:
+    def detect(self, frame: np.ndarray) -> tuple[ndarray, ndarray, ndarray] | None:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         model_frame = cv2.resize(model_frame, self.__image_size, interpolation=cv2.INTER_AREA)
         outputs = self.__rknn_model.inference(inputs=[model_frame])
@@ -249,9 +252,9 @@ class Rknn_yolov5s:
         input_data.append(np.transpose(input1_data, (2, 3, 0, 1)))
         input_data.append(np.transpose(input2_data, (2, 3, 0, 1)))
 
-        boxes, _, _ = self.post_process(input_data)
+        boxes, classes, _ = self.post_process(input_data)
 
         if boxes is not None:
-            return self.create_frame(frame, boxes)
+            return self.create_frame(frame, boxes), boxes, classes
 
         return None

@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework import routers
 
+from panocam_app.image_processing.select import area_detection
 from panocam_app.recording.views import video_api
 from panocam_app.streaming.views import area, stream
 from panocam_app.api import api_models
@@ -12,6 +13,7 @@ router.register(r'Configuration', api_models.ConfigurationViewSet)
 router.register(r'Camera', api_models.CameraViewSet)
 router.register(r'Label', api_models.LabelViewSet)
 router.register(r'VideoRecord', api_models.VideoRecordSet)
+router.register(r'DetectionArea', api_models.DetectionAreaSet)
 
 
 urlpatterns = [
@@ -28,6 +30,10 @@ stream_urls = [
 
 area_urls = [
     path('add_area/<int:camera_id>/', area.add_area, name='add_area'),
+]
+
+area_detection_urls = [
+    path('area_detection/', area_detection.area_detection_view)
 ]
 
 
@@ -52,3 +58,4 @@ urlpatterns.extend(stream_urls)
 urlpatterns.extend(area_urls)
 urlpatterns.extend(model_urls)
 urlpatterns.extend(video_records_urls)
+urlpatterns.extend(area_detection_urls)
