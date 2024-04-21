@@ -44,7 +44,7 @@ class Camera {
 async function get_cameras() {
     try {
         const response = await fetch(
-            'http://192.168.1.91:8000/rest/Camera/',
+            '/rest/Camera/',
             {
                 method: 'GET'
             }
