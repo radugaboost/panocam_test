@@ -42,13 +42,17 @@ class ThreadedCamera(object):
         return True
 
     def update(self) -> None:
-        pool = ModelPoolManager(TPEs=3, model=DetectionModel.objects.all()[0])
+        pool = ModelPoolManager(TPEs=3, models=DetectionModel.objects.all())
         while not self.stop:
             success, frame = self.capture.read()
 
             if success:
                 pool.put(frame)
-                detection_frame, detected_boxes, detected_classes = pool.get()
+                result = pool.get()
+                if result:
+                    detection_frame, detected_boxes, detected_classes = result
+                else:
+                    detection_frame, detected_boxes, detected_classes = None, None, None
                 self.__frame = self.add_areas_on_frame(frame, detected_boxes, detected_classes)
 
                 self.__warped_frame = warp_image(frame)
@@ -74,7 +78,8 @@ class ThreadedCamera(object):
 
             poly_area = np.array(modified_points, dtype=np.int32)
 
-            if detected_classes is not None and self.check_collision(detected_boxes, poly_area, detected_classes, area.label):
+            if detected_classes is not None and self.check_collision(detected_boxes, poly_area, detected_classes,
+                                                                     area.label):
                 mask = np.zeros_like(frame_with_areas)
 
                 cv2.fillPoly(mask, [poly_area], color=(0, 0, 255))
