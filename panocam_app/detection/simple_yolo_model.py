@@ -11,7 +11,8 @@ class SimpleYolo:
     __obj_thresh = 0.65
     __nms_thresh = 0.45
     __image_size = (640, 640)
-    __similarity = 0.2
+    __similarity = 0.7
+    counter = 0
     output_dir = './panocam_app/storage/detected_humans'
     color_ranges = {
         'white': ([0, 0, 200], [180, 50, 255]),
@@ -46,7 +47,7 @@ class SimpleYolo:
         return None
 
     @staticmethod
-    def calculate_similarity(img1, img2):
+    def calculate_similarity(img1: np.ndarray, img2: np.ndarray):
         img1_resized = cv2.resize(img1, (img2.shape[1], img2.shape[0]))
 
         gray1 = cv2.cvtColor(img1_resized, cv2.COLOR_BGR2GRAY)
@@ -54,6 +55,37 @@ class SimpleYolo:
 
         correlation = cv2.matchTemplate(gray1, gray2, cv2.TM_CCOEFF_NORMED)
         return correlation[0, 0]
+
+    def find_sim(self, color, cropped_object: np.ndarray):
+        color_dir = os.path.join(self.output_dir, color)
+
+        for filename in os.listdir(color_dir):
+            existing_image = cv2.imread(os.path.join(self.output_dir, f'{color}/{filename}'))
+            similarity = self.calculate_similarity(existing_image, cropped_object)
+            print(similarity, os.path.join(self.output_dir, f'{color}/{filename}'))
+            if similarity > self.__similarity:
+                return True
+        self.save_by_color(color, cropped_object)
+
+    def save_by_color(self, color: str, cropped_object: np.ndarray):
+        color_dir = os.path.join(self.output_dir, color)
+        os.makedirs(color_dir, exist_ok=True)
+
+        self.counter += 1
+        filename = os.path.join(self.output_dir, f'{color}/object_{self.counter}.jpg')
+        print(os.path.join(self.output_dir, f'{color}/{filename}'))
+        cv2.imwrite(filename, cropped_object)
+
+    def re_identify(self, frame: np.ndarray, detection: sv.Detections) -> bool:
+        x, y, w, h = map(int, detection.xyxy.tolist()[0])
+        cropped_object = frame[y:y + h, x:x + w]
+        if cropped_object.size == 0:
+            return False
+        color = self.extract_dominant_color(cropped_object)
+
+        if color is not None:
+            return self.find_sim(color, cropped_object)
+        return False
 
     def detect(self, frame: np.ndarray) -> tuple[np, np, np] | None:
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -66,38 +98,21 @@ class SimpleYolo:
             detection = sv.Detections.from_inference(detection.dict(by_alias=True, exclude_none=True))
             if not detection:
                 continue
-            self.process(frame)
+            seen = self.re_identify(frame, detection)
             xyxy_list.append(detection.xyxy.tolist())
             classes_list.append(detection.class_id.tolist())
+            print(list(map(int, detection.xyxy.tolist()[0][:2])))
             frame = self.bounding_box_annotator.annotate(scene=frame, detections=detection)
+            cv2.putText(
+                frame,
+                'seen' if seen else '',
+                list(map(int, detection.xyxy.tolist()[0][:2])),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA
+            )
         xyxy = np.concatenate(xyxy_list) if xyxy_list else np.empty((0, 4))
         classes = np.concatenate(classes_list) if classes_list else np.empty(0)
         return frame, xyxy, classes
-
-    def process(self, frame: np.ndarray):
-        counter = 0
-        for detection in self.detections:
-            detection = sv.Detections.from_inference(detection.dict(by_alias=True, exclude_none=True))
-            x, y, w, h = map(int, detection.xyxy.tolist()[0])
-            cropped_object = frame[y:y + h, x:x + w]
-            if cropped_object.size == 0:
-                continue
-            color = self.extract_dominant_color(cropped_object)
-
-            if color is not None:
-                color_dir = os.path.join(self.output_dir, color)
-                os.makedirs(color_dir, exist_ok=True)
-
-                save_image = True
-                for filename in os.listdir(color_dir):
-                    existing_image = cv2.imread(os.path.join(self.output_dir, f'{color}/{filename}'))
-                    print(os.path.join(self.output_dir, f'{color}/{filename}'))
-                    similarity = self.calculate_similarity(existing_image, cropped_object)
-                    if similarity < self.__similarity:
-                        save_image = False
-                        break
-
-                if save_image:
-                    counter += 1
-                    filename = os.path.join(self.output_dir, f'{color}/object_{counter}.jpg')
-                    cv2.imwrite(filename, cropped_object)

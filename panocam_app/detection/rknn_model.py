@@ -13,7 +13,7 @@ from panocam_app.image_processing.centering import insert_into_center
 
 
 class Rknn_yolov5s:
-    __similarity = 0.2
+    __similarity = 0.8
     counter = 0
     output_dir = './panocam_app/storage/detected_humans'
     color_ranges = {
@@ -308,7 +308,7 @@ class Rknn_yolov5s:
         for filename in os.listdir(color_dir):
             existing_image = cv2.imread(os.path.join(self.output_dir, f'{color}/{filename}'))
             similarity = self.calculate_similarity(existing_image, cropped_object)
-            if similarity < self.__similarity:
+            if similarity > self.__similarity:
                 return True
         self.save_by_color(color, cropped_object)
 
