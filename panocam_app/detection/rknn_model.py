@@ -1,6 +1,8 @@
+import os
+
 import numpy as np
-# from rknnlite.api import RKNNLite
-# from rknn.api import RKNN
+from rknnlite.api import RKNNLite
+from rknn.api import RKNN
 from typing import Optional
 import cv2
 
@@ -11,14 +13,24 @@ from panocam_app.image_processing.centering import insert_into_center
 
 
 class Rknn_yolov5s:
+    __similarity = 0.2
+    counter = 0
+    output_dir = './panocam_app/storage/detected_humans'
+    color_ranges = {
+        'white': ([0, 0, 200], [180, 50, 255]),
+        'black': ([0, 0, 0], [180, 255, 60]),
+        'green': ([35, 50, 50], [80, 255, 255]),
+        'blue': ([90, 50, 50], [130, 255, 255]),
+        'red': ([0, 50, 50], [10, 255, 255])
+    }
 
     def __init__(
         self,
         rknn_model: str,
         npu_id: int = 0
     ) -> None:
-        # self.__rknn_model = Rknn_yolov5s.initRKNNLite(rknn_model, npu_id)
-        self.__rknn_model = Rknn_yolov5s.initRKNN(rknn_model, npu_id)
+        self.__rknn_model = Rknn_yolov5s.initRKNNLite(rknn_model, npu_id)
+        # self.__rknn_model = Rknn_yolov5s.initRKNN(rknn_model, npu_id)
         self.__classes = (
             "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
             "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -43,55 +55,56 @@ class Rknn_yolov5s:
             [116, 90], [156, 198], [373, 326]
         ]
 
-    # @staticmethod
-    # def initRKNNLite(rknnModel: str, npu_id: int) -> RKNNLite:
-    #     rknn_lite = RKNNLite()
-    #     ret = rknn_lite.load_rknn(rknnModel)
-    #
-    #     if ret != 0:
-    #         print("Load RKNN rknnModel failed")
-    #         exit(ret)
-    #
-    #     if npu_id == 0:
-    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
-    #     elif npu_id == 1:
-    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
-    #     elif npu_id == 2:
-    #         ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
-    #     else:
-    #         ret = rknn_lite.init_runtime()
-    #
-    #     if ret != 0:
-    #         print("Init runtime environment failed")
-    #         exit(ret)
-    #
-    #     print(rknnModel, "done")
-    #     return rknn_lite
-    # @staticmethod
-    # def initRKNN(rknnModel: str, npu_id: int) -> RKNN:
-    #     rknn = RKNN()
-    #     # ret = rknn.load_rknn(rknnModel)
-    #     ret = rknn.load_rknn('./panocam_app/storage/models/yolov5s_relu_tk2_RK3588_i8.rknn')
-    #
-    #     if ret != 0:
-    #         print("Load RKNN rknnModel failed")
-    #         exit(ret)
-    #
-    #     if npu_id == 0:
-    #         ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_0)
-    #     elif npu_id == 1:
-    #         ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_1)
-    #     elif npu_id == 2:
-    #         ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_2)
-    #     else:
-    #         ret = rknn.init_runtime(target='rk3588')
-    #
-    #     if ret != 0:
-    #         print("Init runtime environment failed")
-    #         exit(ret)
-    #
-    #     print(rknnModel, "done")
-    #     return rknn
+    @staticmethod
+    def initRKNNLite(rknnModel: str, npu_id: int) -> RKNNLite:
+        rknn_lite = RKNNLite()
+        ret = rknn_lite.load_rknn(rknnModel)
+
+        if ret != 0:
+            print("Load RKNN rknnModel failed")
+            exit(ret)
+
+        if npu_id == 0:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_0)
+        elif npu_id == 1:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_1)
+        elif npu_id == 2:
+            ret = rknn_lite.init_runtime(core_mask=RKNNLite.NPU_CORE_2)
+        else:
+            ret = rknn_lite.init_runtime()
+
+        if ret != 0:
+            print("Init runtime environment failed")
+            exit(ret)
+
+        print(rknnModel, "done")
+        return rknn_lite
+
+    @staticmethod
+    def initRKNN(rknnModel: str, npu_id: int) -> RKNN:
+        rknn = RKNN()
+        # ret = rknn.load_rknn(rknnModel)
+        ret = rknn.load_rknn('./panocam_app/storage/models/yolov5s_relu_tk2_RK3588_i8.rknn')
+
+        if ret != 0:
+            print("Load RKNN rknnModel failed")
+            exit(ret)
+
+        if npu_id == 0:
+            ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_0)
+        elif npu_id == 1:
+            ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_1)
+        elif npu_id == 2:
+            ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_2)
+        else:
+            ret = rknn.init_runtime(target='rk3588')
+
+        if ret != 0:
+            print("Init runtime environment failed")
+            exit(ret)
+
+        print(rknnModel, "done")
+        return rknn
 
     def process(
             self, input: np.ndarray, mask: list, anchors: list
@@ -265,6 +278,60 @@ class Rknn_yolov5s:
         objects_frame = concat_images(images)
         return insert_into_center(empty_frame, objects_frame)
 
+    def extract_dominant_color(self, image):
+        resized_image = cv2.resize(image, self.__image_size)
+
+        hsv_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2HSV)
+
+        for color_name, (lower, upper) in self.color_ranges.items():
+            lower = np.array(lower, dtype=np.uint8)
+            upper = np.array(upper, dtype=np.uint8)
+            mask = cv2.inRange(hsv_image, lower, upper)
+            if cv2.countNonZero(mask) > 0:
+                return color_name
+
+        return None
+
+    @staticmethod
+    def calculate_similarity(img1: np.ndarray, img2: np.ndarray):
+        img1_resized = cv2.resize(img1, (img2.shape[1], img2.shape[0]))
+
+        gray1 = cv2.cvtColor(img1_resized, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+        correlation = cv2.matchTemplate(gray1, gray2, cv2.TM_CCOEFF_NORMED)
+        return correlation[0, 0]
+
+    def find_sim(self, color, cropped_object: np.ndarray):
+        color_dir = os.path.join(self.output_dir, color)
+
+        for filename in os.listdir(color_dir):
+            existing_image = cv2.imread(os.path.join(self.output_dir, f'{color}/{filename}'))
+            similarity = self.calculate_similarity(existing_image, cropped_object)
+            if similarity < self.__similarity:
+                return True
+        self.save_by_color(color, cropped_object)
+
+    def save_by_color(self, color: str, cropped_object: np.ndarray):
+        color_dir = os.path.join(self.output_dir, color)
+        os.makedirs(color_dir, exist_ok=True)
+
+        self.counter += 1
+        filename = os.path.join(self.output_dir, f'{color}/object_{self.counter}.jpg')
+        print(os.path.join(self.output_dir, f'{color}/{filename}'))
+        cv2.imwrite(filename, cropped_object)
+
+    def re_identify(self, frame: np.ndarray, boxes) -> bool:
+        x, y, w, h = boxes
+        cropped_object = frame[y:y + h, x:x + w]
+        if cropped_object.size == 0:
+            return False
+        color = self.extract_dominant_color(cropped_object)
+
+        if color is not None:
+            return self.find_sim(color, cropped_object)
+        return False
+
     def detect(self, frame: np.ndarray) -> tuple[ndarray, ndarray, ndarray] | None:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         model_frame = cv2.resize(model_frame, self.__image_size, interpolation=cv2.INTER_AREA)
@@ -283,6 +350,18 @@ class Rknn_yolov5s:
         boxes, classes, _ = self.post_process(input_data)
 
         if boxes is not None:
-            return self.create_frame(frame, boxes), boxes, classes
+            new_frame = self.create_frame(frame, boxes), boxes, classes
+            seen = self.re_identify(frame, boxes)
+            cv2.putText(
+                frame,
+                'seen' if seen else '',
+                list(map(int, boxes.tolist()[0][:2])),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA
+            )
+            return new_frame
 
         return None

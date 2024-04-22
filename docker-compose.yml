@@ -24,9 +24,9 @@ services:
     privileged: true
     volumes:
       - ./:/panocam
-#      - /dev/dri/renderD129:/dev/dri/renderD129
-#      - /proc/device-tree/compatible:/proc/device-tree/compatible
-#      - /usr/lib/librknnrt.so:/usr/lib/librknnrt.so
+      - /dev/dri/renderD129:/dev/dri/renderD129
+      - /proc/device-tree/compatible:/proc/device-tree/compatible
+      - /usr/lib/librknnrt.so:/usr/lib/librknnrt.so
     depends_on:
       postgres:
         condition: service_healthy
