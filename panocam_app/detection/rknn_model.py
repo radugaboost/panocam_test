@@ -23,6 +23,8 @@ class Rknn_yolov5s:
         'blue': ([90, 50, 50], [130, 255, 255]),
         'red': ([0, 50, 50], [10, 255, 255])
     }
+    detected = {}
+    frame_cnt = 0
 
     def __init__(
         self,
@@ -283,7 +285,7 @@ class Rknn_yolov5s:
 
         hsv_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2HSV)
 
-        for color_name, (lower, upper) in self.color_ranges.items():
+        for color_name, (lower, upper) in Rknn_yolov5s.color_ranges.items():
             lower = np.array(lower, dtype=np.uint8)
             upper = np.array(upper, dtype=np.uint8)
             mask = cv2.inRange(hsv_image, lower, upper)
@@ -309,15 +311,23 @@ class Rknn_yolov5s:
             existing_image = cv2.imread(os.path.join(self.output_dir, f'{color}/{filename}'))
             similarity = self.calculate_similarity(existing_image, cropped_object)
             if similarity > self.__similarity:
+                if int(filename.replace('.jpg', '')) in self.detected:
+                    cur = self.detected[int(filename.replace('.jpg', ''))]
+                    if cur < 10:
+                        self.detected[int(filename.replace('.jpg', ''))] += 1
+                    break
                 return True
-        self.save_by_color(color, cropped_object)
+        else:
+            self.save_by_color(color, cropped_object)
+        return False
 
     def save_by_color(self, color: str, cropped_object: np.ndarray):
         color_dir = os.path.join(self.output_dir, color)
         os.makedirs(color_dir, exist_ok=True)
 
         self.counter += 1
-        filename = os.path.join(self.output_dir, f'{color}/object_{self.counter}.jpg')
+        self.detected[self.counter] = 0
+        filename = os.path.join(self.output_dir, f'{color}/{self.counter}.jpg')
         print(os.path.join(self.output_dir, f'{color}/{filename}'))
         cv2.imwrite(filename, cropped_object)
 
@@ -331,6 +341,16 @@ class Rknn_yolov5s:
         if color is not None:
             return self.find_sim(color, cropped_object)
         return False
+
+    def clear_detected(self):
+        if self.frame_cnt % 10 == 0:
+            for detection_id in self.detected.copy():
+                print(self.detected[detection_id], detection_id)
+                if self.detected[detection_id] <= 4:
+                    self.detected.pop(detection_id)
+                else:
+                    self.detected[detection_id] -= 1
+        self.frame_cnt += 1
 
     def detect(self, frame: np.ndarray) -> tuple[ndarray, ndarray, ndarray] | None:
         model_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -349,6 +369,7 @@ class Rknn_yolov5s:
 
         boxes, classes, _ = self.post_process(input_data)
 
+        self.clear_detected()
         if boxes is not None:
             new_frame = self.create_frame(frame, boxes), boxes, classes
             seen = self.re_identify(frame, boxes)
