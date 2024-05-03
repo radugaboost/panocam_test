@@ -1,5 +1,6 @@
 *__pycache__*
 *migrations*
-*env*
+*detected_humans*
+*.env
 *.idea*
 *sqlite3

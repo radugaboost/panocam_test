@@ -12,6 +12,7 @@ from .utils import generate
 def camera(
         request: HttpRequest, camera_id: int, area_id: int = None
     ) -> StreamingHttpResponse or HttpResponseNotFound:
+    print(THREADED_CAMERAS)
     frame_type = request.GET.get('frame_type', '')
     camera = THREADED_CAMERAS.get(camera_id)
 

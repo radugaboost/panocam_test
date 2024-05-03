@@ -23,7 +23,7 @@ class ConfigurationSerializer(HyperlinkedModelSerializer):
 class CameraSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Camera
-        fields = '__all__'
+        fields = ['id', 'ip', 'mask', 'name', 'image_config']
 
 
 class LabelSerializer(HyperlinkedModelSerializer):

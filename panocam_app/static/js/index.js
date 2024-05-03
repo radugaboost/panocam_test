@@ -5,11 +5,10 @@ const imgElem = document.querySelector('#stream');
 
 class Camera {
     constructor(options) {
-        this.src = `/camera_stream/${options.cameraId}/`
+        this.src = `/camera_stream/${options.id}/`
         this.ip = options.ip;
         this.name = options.name;
         this.mask = options.mask;
-        this.url = options.url
         this.configUrl = options.image_config;
         this.imageConfig = null;
         this.setImageConfig();
@@ -20,7 +19,10 @@ class Camera {
             const response = await fetch(
                 this.configUrl,
                 {
-                    method: 'GET'
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Token 461396f6f63871501117c0a5e842d9f42f263d72'
+                    }
                 }
             )
             const result = await response.json();
@@ -44,16 +46,18 @@ class Camera {
 async function get_cameras() {
     try {
         const response = await fetch(
-            '/rest/Camera/',
+            'http://127.0.0.1:8000/rest/Camera/',
             {
-                method: 'GET'
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Token 461396f6f63871501117c0a5e842d9f42f263d72'
+                }
             }
         )
         const result = await response.json();
         for (item in result) {
-            const { ip, mask, name, url, image_config } = result[item];
-            const cameraId = Number(item) + 1;
-            cap = new Camera({ ip, mask, name, url, image_config, cameraId });
+            const { id, ip, mask, name, image_config } = result[item];
+            cap = new Camera({ id, ip, mask, name, image_config });
             cameras.push(cap);
         };
     } catch (error) {

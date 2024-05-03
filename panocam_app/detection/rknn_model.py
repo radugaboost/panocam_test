@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 from rknnlite.api import RKNNLite
-from rknn.api import RKNN
 from typing import Optional
 import cv2
 
@@ -32,7 +31,6 @@ class Rknn_yolov5s:
         npu_id: int = 0
     ) -> None:
         self.__rknn_model = Rknn_yolov5s.initRKNNLite(rknn_model, npu_id)
-        # self.__rknn_model = Rknn_yolov5s.initRKNN(rknn_model, npu_id)
         self.__classes = (
             "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
             "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -81,32 +79,6 @@ class Rknn_yolov5s:
 
         print(rknnModel, "done")
         return rknn_lite
-
-    @staticmethod
-    def initRKNN(rknnModel: str, npu_id: int) -> RKNN:
-        rknn = RKNN()
-        # ret = rknn.load_rknn(rknnModel)
-        ret = rknn.load_rknn('./panocam_app/storage/models/yolov5s_relu_tk2_RK3588_i8.rknn')
-
-        if ret != 0:
-            print("Load RKNN rknnModel failed")
-            exit(ret)
-
-        if npu_id == 0:
-            ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_0)
-        elif npu_id == 1:
-            ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_1)
-        elif npu_id == 2:
-            ret = rknn.init_runtime(core_mask=RKNN.NPU_CORE_2)
-        else:
-            ret = rknn.init_runtime(target='rk3588')
-
-        if ret != 0:
-            print("Init runtime environment failed")
-            exit(ret)
-
-        print(rknnModel, "done")
-        return rknn
 
     def process(
             self, input: np.ndarray, mask: list, anchors: list
@@ -232,6 +204,7 @@ class Rknn_yolov5s:
 
     def draw(
         self,
+        model_frame: np.ndarray,
         frame: np.ndarray,
         boxes: np.ndarray
     ) -> np.ndarray:
@@ -248,6 +221,20 @@ class Rknn_yolov5s:
             relative_left = int(left * x_modifier)
             relative_right = int(right * y_modifier)
             relative_bottom = int(bottom * x_modifier)
+
+            cropped_object = frame[left:left + bottom, top:top + right]
+            color = self.extract_dominant_color(cropped_object)
+            if color is not None and self.find_sim(color, cropped_object):
+                    cv2.putText(
+                        frame,
+                        'seen',
+                        (relative_top, relative_left),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (255, 255, 255),
+                        2,
+                        cv2.LINE_AA
+                    )
 
             cv2.rectangle(frame, (relative_top, relative_left), (relative_right, relative_bottom), (255, 0, 0), 2)
 
@@ -304,7 +291,7 @@ class Rknn_yolov5s:
         correlation = cv2.matchTemplate(gray1, gray2, cv2.TM_CCOEFF_NORMED)
         return correlation[0, 0]
 
-    def find_sim(self, color, cropped_object: np.ndarray):
+    def find_sim(self, color, cropped_object: np.ndarray) -> bool:
         color_dir = os.path.join(self.output_dir, color)
 
         for filename in os.listdir(color_dir):
@@ -328,19 +315,7 @@ class Rknn_yolov5s:
         self.counter += 1
         self.detected[self.counter] = 0
         filename = os.path.join(self.output_dir, f'{color}/{self.counter}.jpg')
-        print(os.path.join(self.output_dir, f'{color}/{filename}'))
         cv2.imwrite(filename, cropped_object)
-
-    def re_identify(self, frame: np.ndarray, boxes) -> bool:
-        x, y, w, h = boxes
-        cropped_object = frame[y:y + h, x:x + w]
-        if cropped_object.size == 0:
-            return False
-        color = self.extract_dominant_color(cropped_object)
-
-        if color is not None:
-            return self.find_sim(color, cropped_object)
-        return False
 
     def clear_detected(self):
         if self.frame_cnt % 10 == 0:
@@ -371,18 +346,8 @@ class Rknn_yolov5s:
 
         self.clear_detected()
         if boxes is not None:
-            new_frame = self.create_frame(frame, boxes), boxes, classes
-            seen = self.re_identify(frame, boxes)
-            cv2.putText(
-                frame,
-                'seen' if seen else '',
-                list(map(int, boxes.tolist()[0][:2])),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (255, 255, 255),
-                2,
-                cv2.LINE_AA
-            )
+            new_frame = self.draw(model_frame, frame, boxes)
+            # new_frame = self.create_frame(frame, boxes), boxes, classes
             return new_frame
 
         return None

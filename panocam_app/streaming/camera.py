@@ -42,23 +42,24 @@ class ThreadedCamera(object):
         return True
 
     def update(self) -> None:
-        pool = ModelPoolManager(TPEs=3, models=DetectionModel.objects.all())
+        pool = ModelPoolManager(TPEs=3, model=DetectionModel.objects.all()[0])
         while not self.stop:
             success, frame = self.capture.read()
 
             if success:
                 pool.put(frame)
                 result = pool.get()
-                if result:
-                    detection_frame, detected_boxes, detected_classes = result
-                else:
-                    detection_frame, detected_boxes, detected_classes = None, None, None
-                self.__frame = self.add_areas_on_frame(frame, detected_boxes, detected_classes)
+                # if len(result) >= 1:
+                #     print(len(result))
+                #     detection_frame, detected_boxes, detected_classes = result
+                # else:
+                #     detection_frame, detected_boxes, detected_classes = None, None, None
+                self.__frame = result
 
                 self.__warped_frame = warp_image(frame)
 
-                if detection_frame is not None:
-                    self.__detection_frame = detection_frame
+                # if detection_frame is not None:
+                #     self.__detection_frame = detection_frame
 
                 if self.queue:
                     self.queue.put(self.__frame)
