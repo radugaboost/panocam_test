@@ -1,3 +1,5 @@
+from time import monotonic
+
 import numpy as np
 import cv2
 from inference import get_model
@@ -21,6 +23,8 @@ class SimpleYolo:
         'blue': ([90, 50, 50], [130, 255, 255]),
         'red': ([0, 50, 50], [10, 255, 255])
     }
+    detected = {}
+    frame_cnt = 0
 
     def __init__(
             self,
@@ -62,17 +66,24 @@ class SimpleYolo:
         for filename in os.listdir(color_dir):
             existing_image = cv2.imread(os.path.join(self.output_dir, f'{color}/{filename}'))
             similarity = self.calculate_similarity(existing_image, cropped_object)
-            print(similarity, os.path.join(self.output_dir, f'{color}/{filename}'))
             if similarity > self.__similarity:
+                if int(filename.replace('.jpg', '')) in self.detected:
+                    cur = self.detected[int(filename.replace('.jpg', ''))]
+                    if cur < 10:
+                        self.detected[int(filename.replace('.jpg', ''))] += 1
+                    break
                 return True
-        self.save_by_color(color, cropped_object)
+        else:
+            self.save_by_color(color, cropped_object)
+        return False
 
     def save_by_color(self, color: str, cropped_object: np.ndarray):
         color_dir = os.path.join(self.output_dir, color)
         os.makedirs(color_dir, exist_ok=True)
 
         self.counter += 1
-        filename = os.path.join(self.output_dir, f'{color}/object_{self.counter}.jpg')
+        self.detected[self.counter] = 0
+        filename = os.path.join(self.output_dir, f'{color}/{self.counter}.jpg')
         print(os.path.join(self.output_dir, f'{color}/{filename}'))
         cv2.imwrite(filename, cropped_object)
 
@@ -87,6 +98,16 @@ class SimpleYolo:
             return self.find_sim(color, cropped_object)
         return False
 
+    def clear_detected(self):
+        if self.frame_cnt % 10 == 0:
+            for detection_id in self.detected.copy():
+                print(self.detected[detection_id], detection_id)
+                if self.detected[detection_id] <= 4:
+                    self.detected.pop(detection_id)
+                else:
+                    self.detected[detection_id] -= 1
+        self.frame_cnt += 1
+
     def detect(self, frame: np.ndarray) -> tuple[np, np, np] | None:
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         resized_frame = cv2.resize(rgb_frame, self.__image_size, interpolation=cv2.INTER_AREA)
@@ -94,6 +115,7 @@ class SimpleYolo:
         self.detections = self.__model.infer(resized_frame)
         xyxy_list = []
         classes_list = []
+        self.clear_detected()
         for detection in self.detections:
             detection = sv.Detections.from_inference(detection.dict(by_alias=True, exclude_none=True))
             if not detection:
@@ -101,7 +123,6 @@ class SimpleYolo:
             seen = self.re_identify(frame, detection)
             xyxy_list.append(detection.xyxy.tolist())
             classes_list.append(detection.class_id.tolist())
-            print(list(map(int, detection.xyxy.tolist()[0][:2])))
             frame = self.bounding_box_annotator.annotate(scene=frame, detections=detection)
             cv2.putText(
                 frame,
